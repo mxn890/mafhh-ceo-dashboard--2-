@@ -1,0 +1,77 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Next.js
+/.next/
+/out/
+.next/
+
+# Production
+/build
+/dist
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Misc
+*.pem
+*.log
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# dotenv environment variables file
+.env.*.local
+
+# vercel
+.vercel
+
+# Database
+*.db
+*.sqlite
+mongodb/
