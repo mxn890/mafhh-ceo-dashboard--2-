@@ -50,7 +50,7 @@ export default function AttendancePage() {
             <h1 className="font-display text-3xl font-semibold text-ink mb-1">Attendance</h1>
             <p className="text-sm text-slate">GPS and selfie-verified check-in, by shift</p>
           </div>
-          <a href="/attendance/portal/manager" className="btn-secondary btn-sm">Open manager view</a>
+          <a href={process.env.NEXT_PUBLIC_ATTENDANCE_PORTAL_URL ? `${process.env.NEXT_PUBLIC_ATTENDANCE_PORTAL_URL}/manager` : '#'} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm">Open manager view →</a>
         </div>
 
         {error && <p className="text-signal text-sm">{error}</p>}
