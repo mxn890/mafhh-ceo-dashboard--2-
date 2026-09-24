@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/db/connect';
-import { Employee, Attendance } from '@/app/lib/db/models';
+import { Employee, Attendance, LeaveRequest } from '@/app/lib/db/models';
 import { getSession } from '@/app/lib/auth/jwt';
 
 function todayPKT() {
@@ -34,5 +34,7 @@ export async function GET() {
   const summary = { OnTime: 0, Late: 0, HalfDay: 0, Absent: 0, Leave: 0 };
   for (const r of rows) summary[r.status] = (summary[r.status] || 0) + 1;
 
-  return NextResponse.json({ date, summary, rows });
+  const leaveRequests = await LeaveRequest.find({}).sort({ requestedAt: -1 }).limit(20);
+
+  return NextResponse.json({ date, summary, rows, leaveRequests });
 }

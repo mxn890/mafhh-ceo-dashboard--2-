@@ -193,3 +193,18 @@ const locationPingSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now, index: true },
 });
 export const LocationPing = mongoose.models.LocationPing || mongoose.model('LocationPing', locationPingSchema);
+
+const leaveRequestSchema = new mongoose.Schema({
+  employeeId: String,
+  employeeName: String,
+  department: String,
+  fromDate: String,
+  toDate: String,
+  reason: String,
+  status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+  requestedAt: { type: Date, default: Date.now },
+  reviewedBy: String,
+  reviewedAt: Date,
+  managerNote: String,
+});
+export const LeaveRequest = mongoose.models.LeaveRequest || mongoose.model('LeaveRequest', leaveRequestSchema);

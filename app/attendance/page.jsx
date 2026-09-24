@@ -111,6 +111,25 @@ export default function AttendancePage() {
                 </tbody>
               </table>
             </div>
+
+            {data.leaveRequests?.length > 0 && (
+              <div className="mt-6">
+                <p className="font-display text-sm font-semibold text-ink mb-2">Recent leave requests</p>
+                <div className="bg-paper border border-line divide-y divide-line">
+                  {data.leaveRequests.map((lr) => (
+                    <div key={lr._id} className="px-4 py-3">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-ink">{lr.employeeName} <span className="font-tabular text-xs text-slate-light">({lr.employeeId})</span></span>
+                        <span className={lr.status === 'approved' ? 'badge-success' : lr.status === 'rejected' ? 'badge-danger' : 'badge-warning'}>{lr.status}</span>
+                      </div>
+                      <p className="font-tabular text-xs text-slate mb-1">{lr.fromDate} → {lr.toDate}</p>
+                      <p className="text-sm text-slate">"{lr.reason}"</p>
+                      {lr.managerNote && <p className="text-xs text-slate-light mt-1">Manager note: {lr.managerNote}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </main>
