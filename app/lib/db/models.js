@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
 
 // Employee Model
 const employeeSchema = new mongoose.Schema({
+  employeeId: { type: String, unique: true, sparse: true },
   name: { type: String, required: true },
   email: String,
   phone: String,
@@ -21,6 +22,20 @@ const employeeSchema = new mongoose.Schema({
   assigned_pc: { type: String, default: null }, // PC name if applicable
   shift_timing: String,
   profile_photo: String,
+
+  // Attendance-portal login
+  password: { type: String, default: null }, // bcrypt hash; null until seeded
+  mustChangePassword: { type: Boolean, default: true },
+  attendanceRole: { type: String, enum: ['employee', 'manager'], default: 'employee' },
+
+  // One-time selfie enrollment — faceDescriptor is a 128-length array
+  // (face-api.js's face recognition output) used to compare every future
+  // check-in/out selfie against. enrollmentPhoto is kept so a manager can
+  // see the actual reference photo, not just numbers.
+  isEnrolled: { type: Boolean, default: false },
+  faceDescriptor: { type: [Number], default: null },
+  enrollmentPhoto: { type: String, default: null }, // base64 data URI
+
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
@@ -83,19 +98,56 @@ const shipmentSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Attendance Model
+// One check-in or check-out event
+const attendanceEventSchema = new mongoose.Schema({
+  time: Date,
+  lat: Number,
+  lng: Number,
+  photo: String, // base64 data URI
+  faceMatchDistance: Number, // lower = more similar; null if no enrollment yet to compare against
+  faceMatchStatus: { type: String, enum: ['verified', 'needs_review', 'no_face_detected'], default: 'needs_review' },
+  locationLabel: { type: String, enum: ['office', 'airport', 'out_of_range', 'not_configured'], default: 'not_configured' },
+  distanceMeters: Number,
+}, { _id: false });
+
+// Attendance Model — one document per employee per day
 const attendanceSchema = new mongoose.Schema({
-  employee_id: mongoose.Schema.Types.ObjectId,
-  employee_name: String,
-  date: Date,
-  check_in_time: Date,
-  check_in_location: { latitude: Number, longitude: Number },
-  check_in_photo: String,
-  check_out_time: Date,
-  check_out_location: { latitude: Number, longitude: Number },
-  check_out_photo: String,
-  status: { type: String, enum: ['present', 'absent', 'late', 'early-leave'], default: 'present' },
+  employeeId: { type: String, required: true, index: true }, // matches Employee.employeeId
+  employeeName: String,
+  date: { type: String, required: true, index: true }, // 'YYYY-MM-DD' in PKT — a plain string keeps per-day uniqueness simple
+  checkIn: attendanceEventSchema,
+  checkOut: attendanceEventSchema,
+  status: { type: String, enum: ['OnTime', 'Late', 'HalfDay', 'Absent', 'Leave'], default: 'Absent' },
+  reviewedBy: String, // manager's employeeId, if they manually reviewed/overrode this record
+  reviewNote: String,
   createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+attendanceSchema.index({ employeeId: 1, date: 1 }, { unique: true });
+
+// Attendance configuration — a single document holding the office/airport
+// geofence points and the shift-timing rules, so these can be updated from
+// one place (a manager settings screen) instead of being hardcoded.
+const attendanceConfigSchema = new mongoose.Schema({
+  key: { type: String, default: 'default', unique: true },
+  officeLocation: {
+    address: String,
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
+    radiusMeters: { type: Number, default: 150 },
+  },
+  airportLocation: {
+    address: String,
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null },
+    radiusMeters: { type: Number, default: 300 },
+  },
+  shiftRules: {
+    startTime: { type: String, default: '09:00' }, // 24h HH:MM, PKT
+    lateAfter: { type: String, default: '09:30' },
+    halfDayAfter: { type: String, default: '10:00' },
+    endTime: { type: String, default: '18:00' },
+  },
 });
 
 // CCTV Alert Model
@@ -130,5 +182,14 @@ export const PCDailyReport = mongoose.models.PCDailyReport || mongoose.model('PC
 export const Flight = mongoose.models.Flight || mongoose.model('Flight', flightSchema);
 export const Shipment = mongoose.models.Shipment || mongoose.model('Shipment', shipmentSchema);
 export const Attendance = mongoose.models.Attendance || mongoose.model('Attendance', attendanceSchema);
+export const AttendanceConfig = mongoose.models.AttendanceConfig || mongoose.model('AttendanceConfig', attendanceConfigSchema);
 export const CCTVAlert = mongoose.models.CCTVAlert || mongoose.model('CCTVAlert', cctvAlertSchema);
 export const Alert = mongoose.models.Alert || mongoose.model('Alert', alertSchema);
+
+const locationPingSchema = new mongoose.Schema({
+  employeeId: { type: String, required: true, index: true },
+  lat: Number,
+  lng: Number,
+  timestamp: { type: Date, default: Date.now, index: true },
+});
+export const LocationPing = mongoose.models.LocationPing || mongoose.model('LocationPing', locationPingSchema);

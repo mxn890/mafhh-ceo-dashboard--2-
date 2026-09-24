@@ -1,71 +1,119 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Navigation from '../components/common/Navigation';
 
+const LiveMap = dynamic(() => import('../components/common/LiveMap'), { ssr: false, loading: () => <p className="text-sm text-slate p-6">Loading map…</p> });
+
+const STATUS_BADGE = { OnTime: 'badge-success', Late: 'badge-warning', HalfDay: 'badge-warning', Absent: 'badge-danger', Leave: 'badge-info' };
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('en-GB', { timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
 export default function AttendancePage() {
-  const [employees, setEmployees] = useState(null);
+  const [data, setData] = useState(null);
+  const [error, setError] = useState(null);
+  const [liveData, setLiveData] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/employees')
+    fetch('/api/attendance/overview')
       .then((r) => r.json())
-      .then((body) => { if (!cancelled) setEmployees(body.employees || []); })
-      .catch(() => { if (!cancelled) setEmployees([]); });
+      .then((body) => { if (!cancelled) { if (body.error) setError(body.error); else setData(body); } })
+      .catch(() => { if (!cancelled) setError('Could not load attendance.'); });
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    function loadLive() {
+      fetch('/api/attendance/live-locations')
+        .then((r) => r.json())
+        .then((body) => { if (!cancelled && !body.error) setLiveData(body); })
+        .catch(() => {});
+    }
+    loadLive();
+    const t = setInterval(loadLive, 30000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-mist relative">
+    <div className="min-h-screen bg-mist">
       <Navigation />
 
-      {/* Background preview — blurred, gives a sense of the real thing without functioning yet */}
-      <main className="container mx-auto px-4 py-8 blur-sm pointer-events-none select-none" aria-hidden="true">
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-semibold text-ink mb-1">Attendance</h1>
-          <p className="text-sm text-slate">GPS and photo-verified check-in, by shift</p>
-        </div>
-
-        <div className="bg-paper border border-line">
-          <div className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-line text-xs font-semibold text-slate">
-            <span>Employee</span>
-            <span>Department</span>
-            <span>Shift</span>
-            <span>Check-in</span>
-            <span>Status</span>
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl font-semibold text-ink mb-1">Attendance</h1>
+            <p className="text-sm text-slate">GPS and selfie-verified check-in, by shift</p>
           </div>
-          {(employees || Array.from({ length: 8 })).slice(0, 10).map((emp, i) => (
-            <div key={emp?._id || i} className="grid grid-cols-5 gap-4 px-4 py-3 border-b border-line last:border-0 text-sm">
-              <span className="font-medium text-ink">{emp?.name || '—'}</span>
-              <span className="text-slate">{emp?.department || '—'}</span>
-              <span className="font-tabular text-slate">{emp?.shift_timing || '—'}</span>
-              <span className="font-tabular text-slate">—:—</span>
-              <span className="badge-info">Pending setup</span>
-            </div>
-          ))}
+          <a href="/attendance/portal/manager" className="btn-secondary btn-sm">Open manager view</a>
         </div>
-      </main>
 
-      {/* Overlay */}
-      <div className="fixed inset-0 z-40 flex items-center justify-center px-4 bg-ink/10">
-        <div className="bg-paper border border-line max-w-md w-full p-8 shadow-2xl">
-          <span className="inline-block w-2 h-2 bg-signal mb-4" />
-          <h2 className="font-display text-xl font-semibold text-ink mb-2">Attendance — being configured</h2>
-          <p className="text-sm text-slate leading-relaxed mb-4">
-            GPS and photo check-in for the office and Allama Iqbal Airport locations is being set up
-            against the shift rules already provided:
-          </p>
-          <ul className="text-sm text-ink space-y-1.5 mb-5">
-            <li className="flex justify-between"><span className="text-slate">Shift start</span><span className="font-tabular">9:00 AM</span></li>
-            <li className="flex justify-between"><span className="text-slate">Late after</span><span className="font-tabular">9:30 AM</span></li>
-            <li className="flex justify-between"><span className="text-slate">Half-day after</span><span className="font-tabular">10:00 AM</span></li>
-            <li className="flex justify-between"><span className="text-slate">Shift end</span><span className="font-tabular">6:00 PM</span></li>
-          </ul>
-          <p className="text-xs text-slate-light">
-            The table behind this is a preview of the layout — no check-ins are recorded yet.
-          </p>
-        </div>
-      </div>
+        {error && <p className="text-signal text-sm">{error}</p>}
+        {!data && !error && <p className="text-slate text-sm">Loading…</p>}
+
+        {data && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-line mb-6">
+              {Object.entries(data.summary).map(([label, value]) => (
+                <div key={label} className="bg-paper text-center py-4">
+                  <p className="text-xs text-slate mb-1">{label}</p>
+                  <p className="font-tabular text-2xl font-semibold text-ink">{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {liveData && (
+              <div className="mb-6">
+                <p className="font-display text-sm font-semibold text-ink mb-2">
+                  Live locations — {liveData.points.length} on duty right now
+                </p>
+                {liveData.points.length === 0 ? (
+                  <div className="card"><p className="text-sm text-slate-light">No one is currently checked in.</p></div>
+                ) : (
+                  <div className="border border-line">
+                    <LiveMap points={liveData.points} office={liveData.office} airport={liveData.airport} />
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="bg-paper border border-line overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-mist border-b border-line">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left font-medium text-slate">Employee</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-slate">Department</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-slate">Shift</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-slate">Check-in</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-slate">Check-out</th>
+                    <th className="px-4 py-2.5 text-left font-medium text-slate">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-line">
+                  {data.rows.map((r) => (
+                    <tr key={r.employeeId}>
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-ink">{r.name}</p>
+                        <p className="font-tabular text-xs text-slate-light">{r.employeeId}</p>
+                      </td>
+                      <td className="px-4 py-3 text-slate">{r.department}</td>
+                      <td className="px-4 py-3 font-tabular text-slate">{r.shift_timing || '—'}</td>
+                      <td className="px-4 py-3 font-tabular text-ink">{fmtTime(r.checkInTime)}</td>
+                      <td className="px-4 py-3 font-tabular text-ink">{fmtTime(r.checkOutTime)}</td>
+                      <td className="px-4 py-3"><span className={STATUS_BADGE[r.status] || 'badge-info'}>{r.status}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
