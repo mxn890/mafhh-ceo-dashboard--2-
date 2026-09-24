@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Navigation from '../components/common/Navigation';
 
+const STATUS_BADGE = { OnTime: 'badge-success', Late: 'badge-warning', HalfDay: 'badge-warning', Absent: 'badge-danger', Leave: 'badge-info' };
+
 export default function EmployeesPage() {
+  const router = useRouter();
   const [employees, setEmployees] = useState(null);
+  const [attendanceByEmployee, setAttendanceByEmployee] = useState({});
   const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
 
@@ -18,6 +23,21 @@ export default function EmployeesPage() {
         if (!cancelled) setEmployees(body.employees);
       } catch (err) {
         if (!cancelled) setError(err.message);
+      }
+
+      // Today's real attendance status, keyed by employeeId — this is
+      // what actually answers "who's here today", not the static
+      // employment-status field (which just means "still on the roster").
+      try {
+        const attRes = await fetch('/api/attendance/overview');
+        const attBody = await attRes.json();
+        if (!cancelled && attBody.rows) {
+          const map = {};
+          for (const r of attBody.rows) map[r.employeeId] = r.status;
+          setAttendanceByEmployee(map);
+        }
+      } catch {
+        // attendance status is a nice-to-have here — don't block the roster if it fails
       }
     }
     load();
@@ -85,23 +105,30 @@ export default function EmployeesPage() {
                 {department} <span className="text-slate-light font-normal">· {people.length}</span>
               </h2>
               <div className="bg-paper border border-line">
-                {people.map((emp, i) => (
-                  <div
-                    key={emp._id}
-                    className={`flex items-center justify-between gap-4 px-4 py-3 ${i !== people.length - 1 ? 'border-b border-line' : ''}`}
-                  >
-                    <div className="min-w-0 flex items-center gap-4">
-                      <span className="font-tabular text-xs text-slate-light w-24 shrink-0">{emp.employeeId || '—'}</span>
-                      <span className="font-medium text-sm text-ink truncate">{emp.name}</span>
+                {people.map((emp, i) => {
+                  const todayStatus = attendanceByEmployee[emp.employeeId];
+                  return (
+                    <div
+                      key={emp._id}
+                      onClick={() => router.push(`/attendance/employee/${emp.employeeId}`)}
+                      className={`flex items-center justify-between gap-4 px-4 py-3 cursor-pointer hover:bg-mist transition-colors ${i !== people.length - 1 ? 'border-b border-line' : ''}`}
+                    >
+                      <div className="min-w-0 flex items-center gap-4">
+                        <span className="font-tabular text-xs text-slate-light w-24 shrink-0">{emp.employeeId || '—'}</span>
+                        <span className="font-medium text-sm text-ink truncate">{emp.name}</span>
+                      </div>
+                      <div className="flex items-center gap-4 shrink-0">
+                        <span className="font-tabular text-xs text-slate hidden sm:block">{emp.shift_timing || '—'}</span>
+                        {todayStatus ? (
+                          <span className={STATUS_BADGE[todayStatus] || 'badge-info'}>{todayStatus}</span>
+                        ) : (
+                          <span className="badge-info">No data</span>
+                        )}
+                        <span className="text-slate-light">→</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4 shrink-0">
-                      <span className="font-tabular text-xs text-slate hidden sm:block">{emp.shift_timing || '—'}</span>
-                      <span className={emp.status === 'active' ? 'badge-success' : 'badge-info'}>
-                        {emp.status === 'active' ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
