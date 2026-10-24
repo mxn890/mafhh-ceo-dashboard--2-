@@ -23,6 +23,8 @@ const employeeSchema = new mongoose.Schema({
   shift_timing: String,
   profile_photo: String,
 
+  assignedLocation: { type: String, enum: ['office', 'airport', 'either'], default: 'either' },
+
   // Attendance-portal login
   password: { type: String, default: null }, // bcrypt hash; null until seeded
   mustChangePassword: { type: Boolean, default: true },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import Navigation from '../components/common/Navigation';
 
 const LiveMap = dynamic(() => import('../components/common/LiveMap'), { ssr: false, loading: () => <p className="text-sm text-slate p-6">Loading map…</p> });
@@ -50,7 +51,7 @@ export default function AttendancePage() {
             <h1 className="font-display text-3xl font-semibold text-ink mb-1">Attendance</h1>
             <p className="text-sm text-slate">GPS and selfie-verified check-in, by shift</p>
           </div>
-          <a href={process.env.NEXT_PUBLIC_ATTENDANCE_PORTAL_URL ? `${process.env.NEXT_PUBLIC_ATTENDANCE_PORTAL_URL}/manager` : '#'} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm">Open manager view →</a>
+          <Link href="/attendance/manager" className="btn-primary">Attendance manager →</Link>
         </div>
 
         {error && <p className="text-signal text-sm">{error}</p>}

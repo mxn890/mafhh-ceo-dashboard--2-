@@ -7,7 +7,7 @@ import { useLivePolling } from '../lib/useLivePolling';
 
 const FILTERS = [
   { key: 'all', label: 'All PCs' },
-  { key: 'ONLINE', label: 'Working' },
+  { key: 'ONLINE', label: 'Active' },
   { key: 'IDLE', label: 'Idle' },
   { key: 'OFFLINE', label: 'No signal' },
   { key: 'alerts', label: 'With alerts' },
@@ -48,9 +48,9 @@ export default function Module4Page() {
         filter === 'all' ? true : filter === 'alerts' ? pc.alertsToday > 0 : pc.status === filter;
       const matchesQuery =
         !needle ||
-        pc.employee.toLowerCase().includes(needle) ||
-        pc.pcId.toLowerCase().includes(needle) ||
-        pc.department.toLowerCase().includes(needle);
+        String(pc.employee || '').toLowerCase().includes(needle) ||
+        String(pc.pcId || '').toLowerCase().includes(needle) ||
+        String(pc.department || '').toLowerCase().includes(needle);
       return matchesFilter && matchesQuery;
     });
   }, [snapshot, filter, query]);
@@ -74,7 +74,7 @@ export default function Module4Page() {
         {error && (
           <div className="card border-l-2 border-signal bg-signal-light mb-6">
             <p className="text-signal text-sm">
-              {error} — confirm <span className="font-tabular">pm2 status mafhh-module4</span> on the VPS.
+              Monitoring is temporarily unavailable. Please try Refresh now.
             </p>
           </div>
         )}
@@ -82,7 +82,7 @@ export default function Module4Page() {
         {snapshot && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-line mb-6">
             {[
-              ['Working', snapshot.summary.online],
+              ['Active', snapshot.summary.online],
               ['Idle', snapshot.summary.idle],
               ['No signal', snapshot.summary.offline],
               ['Alerts today', snapshot.summary.alertsToday],
@@ -112,7 +112,7 @@ export default function Module4Page() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search employee, PC or department"
+            aria-label="Search PCs" placeholder="Search employee, PC or department"
             className="ml-auto w-full sm:w-72 border border-line px-3 py-1.5 text-sm bg-paper focus:border-ink focus:outline-none"
           />
         </div>
@@ -125,7 +125,7 @@ export default function Module4Page() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {visible.map((pc) => (
-            <PCCard key={pc.pcId} pc={pc} />
+            <PCCard key={pc.seatId || pc.pcId} pc={pc} />
           ))}
         </div>
       </main>
