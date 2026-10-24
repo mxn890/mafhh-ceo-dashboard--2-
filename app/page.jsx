@@ -43,7 +43,7 @@ export default function Homepage() {
   }, []);
 
   const tiles = [
-    { label: 'PCs working now', value: pc?.summary?.online, of: pc?.summary?.total, href: '/module4', pending: !pc && !loadErrors.pc },
+    { label: 'Active PCs', value: pc?.summary?.online, of: pc?.summary?.total, href: '/module4', pending: !pc && !loadErrors.pc },
     { label: 'PC alerts today', value: pc?.summary?.alertsToday, href: '/module4', accent: pc?.summary?.alertsToday > 0, pending: !pc && !loadErrors.pc },
     { label: 'Shipments pending', value: shipments?.Pending, href: '/shipments', pending: !shipments && !loadErrors.shipments },
     { label: 'Shipments in transit', value: shipments?.Active, href: '/shipments', pending: !shipments && !loadErrors.shipments },
@@ -57,7 +57,19 @@ export default function Homepage() {
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="font-display text-3xl font-semibold text-ink mb-1">Overview</h1>
-          <p className="text-sm text-slate">Live across PC monitoring, shipments and employees</p>
+          <p className="text-sm text-slate">Choose a section below, or review today’s totals.</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {[
+            ['/module4', 'PC monitoring', 'Active PCs, idle time and usage'],
+            ['/attendance/manager', 'Attendance manager', 'Today’s attendance and leave requests'],
+            ['/shipments', 'Shipments', 'Bookings and flight updates'],
+            ['/alerts', 'Alerts', 'Items that need your attention'],
+          ].map(([href, title, description]) => <Link key={href} href={href} className="card-compact hover:border-ink transition-colors">
+            <h2 className="font-display font-semibold text-ink mb-1">{title} <span aria-hidden="true">→</span></h2>
+            <p className="text-sm text-slate">{description}</p>
+          </Link>)}
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-px bg-line mb-8">
@@ -103,7 +115,8 @@ export default function Homepage() {
             <div className="space-y-1">
               <QuickLink href="/module4" label="PC Monitoring" />
               <QuickLink href="/employees" label="Employees" />
-              <QuickLink href="/attendance" label="Attendance" />
+              <QuickLink href="/attendance/manager" label="Attendance manager" />
+              <QuickLink href="/attendance" label="Attendance overview" />
               <QuickLink href="/shipments" label="Shipments" />
               <QuickLink href="/alerts" label="All alerts" />
             </div>

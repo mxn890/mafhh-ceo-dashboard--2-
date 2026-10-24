@@ -15,16 +15,23 @@ const BASE = process.env.MODULE4_API_URL || 'http://195.162.243.191:5004';
 const TIMEOUT_MS = 8000;
 const TZ = 'Asia/Karachi';
 
+// Server-only credential; keep it out of browser bundles and request URLs.
+function apiHeaders(extra = {}) {
+  const key = process.env.MODULE4_API_KEY?.trim();
+  return key ? { ...extra, 'x-api-key': key } : extra;
+}
+
 async function get(path) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(`${BASE}${path}`, { signal: controller.signal, cache: 'no-store' });
+    const res = await fetch(`${BASE}${path}`, { headers: apiHeaders(), signal: controller.signal, cache: 'no-store' });
     const body = await res.json().catch(() => null);
-    if (!res.ok) return { ok: false, error: body?.error || `${res.status} ${res.statusText}`, data: null };
+    if (res.status === 404) return { ok: false, error: 'Not found', data: null };
+    if (!res.ok) throw new Error('Monitoring data is temporarily unavailable. Please try again.');
     return { ok: true, error: null, data: body };
   } catch (err) {
-    return { ok: false, error: err.name === 'AbortError' ? 'Monitoring server timed out' : err.message, data: null };
+    throw new Error(err.name === 'AbortError' ? 'Monitoring server timed out. Please try again.' : 'Monitoring data is temporarily unavailable. Please try again.');
   } finally {
     clearTimeout(timer);
   }
@@ -33,7 +40,7 @@ async function get(path) {
 async function patch(path, body) {
   const res = await fetch(`${BASE}${path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(body),
     cache: 'no-store',
   });
