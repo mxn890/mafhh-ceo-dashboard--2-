@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/', label: 'Overview' },
   { href: '/shipments', label: 'Shipments' },
   { href: '/module4', label: 'PC Monitoring' },
+  { href: '/cctv', label: 'CCTV Review' },
   { href: '/employees', label: 'Employees' },
   { href: '/attendance', label: 'Attendance' },
   { href: '/alerts', label: 'Alerts' },
