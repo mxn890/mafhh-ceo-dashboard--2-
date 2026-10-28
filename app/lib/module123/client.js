@@ -4,14 +4,21 @@
  * same boundary rule as app/lib/module4/client.js.
  */
 
-const BASE = process.env.MODULE123_API_URL || 'http://195.162.243.191:5005';
+const BASE = (process.env.MODULE123_API_URL || '').trim().replace(/\/+$/, '');
 const TIMEOUT_MS = 8000;
+
+function requestHeaders(json = false) {
+  if (!BASE) throw new Error('Shipment API URL is not configured');
+  const key = (process.env.MODULE123_API_KEY || process.env.MODULE4_API_KEY)?.trim();
+  if (!key) throw new Error('Shipment API key is not configured');
+  return { ...(json ? { 'Content-Type': 'application/json' } : {}), 'x-api-key': key };
+}
 
 async function get(path) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch(`${BASE}${path}`, { signal: controller.signal, cache: 'no-store' });
+    const res = await fetch(`${BASE}${path}`, { signal: controller.signal, cache: 'no-store', headers: requestHeaders() });
     const body = await res.json().catch(() => null);
     if (!res.ok) return { ok: false, error: body?.error || `${res.status} ${res.statusText}`, data: null };
     return { ok: true, error: null, data: body };
@@ -25,7 +32,7 @@ async function get(path) {
 async function patch(path, body) {
   const res = await fetch(`${BASE}${path}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: requestHeaders(true),
     body: JSON.stringify(body),
     cache: 'no-store',
   });
