@@ -81,7 +81,7 @@ export default function ShipmentDetailPage({ params }) {
 
         {shipment && (
           <>
-            <div className="card mt-4">
+            <div className="card shipment-detail-hero mt-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-400">AWB</p>
@@ -156,3 +156,4 @@ export default function ShipmentDetailPage({ params }) {
     </div>
   );
 }
+

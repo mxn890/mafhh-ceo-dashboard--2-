@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import Navigation from '../components/common/Navigation';
+import {PCCharts,StatGrid} from '../components/common/Analytics';
 import PCCard from '../components/module4/PCCard';
 import { useLivePolling } from '../lib/useLivePolling';
 
@@ -79,22 +80,13 @@ export default function Module4Page() {
           </div>
         )}
 
-        {snapshot && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-line mb-6">
-            {[
-              ['Active', snapshot.summary.online],
-              ['Idle', snapshot.summary.idle],
-              ['No signal', snapshot.summary.offline],
-              ['Alerts today', snapshot.summary.alertsToday],
-              ['High severity', snapshot.summary.highAlertsToday],
-            ].map(([label, value]) => (
-              <div key={label} className="bg-paper text-center py-4">
-                <p className="text-xs text-slate mb-1">{label}</p>
-                <p className="font-tabular text-2xl font-semibold text-ink">{value}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        {snapshot && <><StatGrid items={[
+          {label:'Active',value:snapshot.summary.online,tone:'dark'},
+          {label:'Idle',value:snapshot.summary.idle},
+          {label:'No signal',value:snapshot.summary.offline},
+          {label:'Alerts today',value:snapshot.summary.alertsToday,tone:'danger'},
+          {label:'High severity',value:snapshot.summary.highAlertsToday},
+        ]}/><PCCharts pcs={snapshot.pcs}/></>}
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="flex flex-wrap gap-2">
@@ -132,3 +124,4 @@ export default function Module4Page() {
     </div>
   );
 }
+

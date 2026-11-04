@@ -1,9 +1,6 @@
-import { Space_Grotesk, Inter, IBM_Plex_Mono } from 'next/font/google';
+import { Poppins } from 'next/font/google';
 import './globals.css';
-
-const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk', weight: ['500', '600', '700'] });
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', weight: ['400', '500', '600'] });
-const plexMono = IBM_Plex_Mono({ subsets: ['latin'], variable: '--font-plex-mono', weight: ['400', '500'] });
+const poppins = Poppins({subsets:['latin'],weight:['400','500','600','700'],variable:'--font-poppins',display:'swap'});
 
 export const metadata = {
   title: 'MAFHH Aviation — Operations Dashboard',
@@ -14,10 +11,10 @@ export const viewport = { width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${inter.variable} ${plexMono.variable}`}>
+    <html lang="en" className={`${poppins.variable}`}>
       <head>
         <meta charSet="utf-8" />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body>
         {children}
@@ -25,3 +22,4 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+

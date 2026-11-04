@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import {AlertCharts,StatGrid} from '../components/common/Analytics';
 import Navigation from '../components/common/Navigation';
 import DayPicker from '../components/common/DayPicker';
 import { lastNDays } from '../lib/dateUtils';
@@ -154,6 +155,7 @@ function AlertsView() {
           </div>
         )}
 
+        {alerts && <><div className="mt-6"><StatGrid items={[{label:'Total alerts',value:alerts.length,tone:'dark'},{label:'High severity',value:alerts.filter(a=>a.severity==='HIGH').length,tone:'danger'},{label:'Open',value:alerts.filter(a=>!a.acknowledged).length},{label:'Acknowledged',value:alerts.filter(a=>a.acknowledged).length}]}/></div><AlertCharts alerts={alerts}/></>}
         <div className="flex flex-wrap gap-2 mt-6 mb-6">
           {['all', 'HIGH', 'MEDIUM', 'LOW'].map((s) => (
             <button
@@ -235,3 +237,4 @@ function AlertsView() {
     </div>
   );
 }
+

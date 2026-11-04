@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import {Panel,Donut,Ranking} from '../components/common/Analytics';
+import {countBy} from '../lib/dashboard-analytics';
 import Navigation from '../components/common/Navigation';
 
 const LiveMap = dynamic(() => import('../components/common/LiveMap'), { ssr: false, loading: () => <p className="text-sm text-slate p-6">Loading map…</p> });
@@ -68,6 +70,7 @@ export default function AttendancePage() {
               ))}
             </div>
 
+            <div className="analytics-grid two"><Panel title="Attendance distribution" subtitle="Today's recorded statuses"><Donut rows={Object.entries(data.summary).map(([label,value],i)=>({label,value,color:['#111','#c8102e','#777','#bbb','#ddd'][i%5]}))} unit="employees"/></Panel><Panel title="Employees by department"><Ranking rows={countBy(data.rows,r=>r.department||'Unassigned')}/></Panel></div>
             {liveData && (
               <div className="mb-6">
                 <p className="font-display text-sm font-semibold text-ink mb-2">
@@ -137,3 +140,4 @@ export default function AttendancePage() {
     </div>
   );
 }
+

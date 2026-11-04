@@ -1,68 +1,9 @@
 'use client';
-
 import Link from 'next/link';
-
-const STATUS_BAR = { ONLINE: 'bg-ok', IDLE: 'bg-warn', OFFLINE: 'bg-slate-light' };
-const STATUS_LABEL = { ONLINE: 'Working', IDLE: 'Idle', OFFLINE: 'No signal' };
-const STATUS_TEXT = { ONLINE: 'text-ok', IDLE: 'text-warn', OFFLINE: 'text-slate-light' };
-
-function timeAgo(timestamp) {
-  if (!timestamp) return 'never reported';
-  const diffMins = Math.max(0, Math.round((Date.now() - new Date(timestamp).getTime()) / 60000));
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const hours = Math.floor(diffMins / 60);
-  return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`;
-}
-
-function fmtMins(mins) {
-  const m = Math.round(mins || 0);
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
-}
-
-export default function PCCard({ pc }) {
-  return (
-    <Link href={`/employees/${pc.seatId}`} className="block h-full">
-      <div className="bg-paper border border-line h-full relative pl-4">
-        <span className={`absolute left-0 top-0 bottom-0 w-1 ${STATUS_BAR[pc.status] || 'bg-slate-light'}`} />
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="font-tabular text-xs text-slate-light">{pc.pcId}{pc.shiftKind ? ` · ${pc.shiftKind}` : ''}</p>
-              <h3 className="font-display font-semibold text-ink truncate">{pc.employee}</h3>
-              <p className="text-xs text-slate">{pc.department} · {pc.location}</p>
-            </div>
-            <span className={`text-xs font-medium shrink-0 ${STATUS_TEXT[pc.status] || 'text-slate-light'}`}>
-              {STATUS_LABEL[pc.status] || pc.status}
-            </span>
-          </div>
-
-          <p className="mt-3 truncate text-xs text-slate" title={pc.currentTitle || ''}>
-            {pc.currentTitle || 'Nothing reported yet'}
-          </p>
-
-          <div className="mt-3 pt-3 border-t border-line flex items-center justify-between text-xs">
-            <span className="text-slate">Active <span className="font-tabular text-ink font-medium">{fmtMins(pc.todayActiveMins)}</span></span>
-            <span className="text-slate">Seen <span className="font-tabular text-ink font-medium">{timeAgo(pc.lastSeenAt)}</span></span>
-          </div>
-
-          {pc.topSite && pc.topSite.mins > 0 && (
-            <p className="mt-2 text-xs text-slate-light truncate">
-              Top: {pc.topSite.name} · {fmtMins(pc.topSite.mins)}
-            </p>
-          )}
-
-          {pc.alertsToday > 0 && (
-            <div className="mt-3 pt-3 border-t border-line">
-              <span className="badge-danger">
-                {pc.alertsToday} alert{pc.alertsToday === 1 ? '' : 's'}
-                {pc.highAlertsToday > 0 ? ` · ${pc.highAlertsToday} high` : ''}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
+import {mins} from '../common/Analytics';
+const LABEL={ONLINE:'Working',IDLE:'Idle',OFFLINE:'No signal'};
+function seen(at){if(!at)return 'never reported';const m=Math.max(0,Math.round((Date.now()-new Date(at).getTime())/60000));return m<1?'just now':m<60?`${m}m ago`:m<1440?`${Math.floor(m/60)}h ago`:`${Math.floor(m/1440)}d ago`;}
+export default function PCCard({pc}){
+ const tone=pc.alertsToday>0?'has-alerts':pc.status==='IDLE'?'is-idle':pc.status==='OFFLINE'?'is-offline':'';
+ return <Link href={`/employees/${pc.seatId||pc.pcId}`} className={`pc-bento ${tone}`}><div className="pc-card-top"><span>{pc.pcId}{pc.shiftKind?` · ${pc.shiftKind}`:''}</span><span className="pc-status">{LABEL[pc.status]||pc.status}</span></div><div className="pc-person"><h3>{pc.employee||'Unassigned'}</h3><p>{pc.department||'Unassigned'} · {pc.location||'Location not set'}</p><p className="pc-current-title" title={pc.currentTitle||''}>{pc.currentTitle||'Nothing reported yet'}</p>{pc.alertsToday>0&&<span className="badge-danger">{pc.alertsToday} alerts{pc.highAlertsToday>0?` · ${pc.highAlertsToday} high`:''}</span>}</div><div className="pc-active-label">Active</div><div className="pc-time-track"><div style={{width:`${Math.min(100,Math.max(0,Number(pc.todayActiveMins)||0)/480*100)}%`}}/></div><div className="pc-active-total">{mins(pc.todayActiveMins)}</div>{pc.topSite?.mins>0&&<p className="pc-top-site" title={pc.topSite.name}>Top: {pc.topSite.name} · {mins(pc.topSite.mins)}</p>}<footer>Seen {seen(pc.lastSeenAt)}</footer></Link>;
 }

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import {ShipmentCharts,StatGrid} from '../components/common/Analytics';
 import Navigation from '../components/common/Navigation';
 import { useLivePolling } from '../lib/useLivePolling';
 
@@ -54,20 +55,7 @@ export default function ShipmentsPage() {
           </div>
         )}
 
-        {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {['Pending', 'Active', 'Delayed', 'Completed'].map((s) => (
-              <button
-                key={s}
-                onClick={() => setFilter(s)}
-                className={`card-compact text-center ${filter === s ? 'ring-2 ring-blue-500' : ''}`}
-              >
-                <p className="text-xs text-gray-500">{s}</p>
-                <p className="text-2xl font-bold text-gray-900">{summary[s]}</p>
-              </button>
-            ))}
-          </div>
-        )}
+        {summary && <><StatGrid items={['Pending','Active','Delayed','Completed'].map(status=>({label:status,value:summary[status],tone:status==='Delayed'?'danger':status==='Completed'?'dark':'',onClick:()=>setFilter(status)}))}/><ShipmentCharts summary={summary} shipments={data.shipments}/></>}
 
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <div className="flex flex-wrap gap-2">
@@ -85,7 +73,7 @@ export default function ShipmentsPage() {
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by AWB number"
+            aria-label="Search by AWB number" placeholder="Search by AWB number"
             className="ml-auto w-full sm:w-64 rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
           />
         </div>
@@ -135,3 +123,4 @@ export default function ShipmentsPage() {
     </div>
   );
 }
+

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import {Panel,Donut,StatGrid} from '../../components/common/Analytics';
 import Navigation from '../../components/common/Navigation';
 import DayPicker from '../../components/common/DayPicker';
 import { lastNDays } from '../../lib/dateUtils';
@@ -117,41 +118,8 @@ export default function EmployeeProfilePage({ params }) {
 
         {profile && (
           <>
-            {/* Header */}
-            <div className="card mt-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold text-gray-400">
-                    {profile.pcId}{profile.shiftKind ? ` · ${profile.shiftKind}` : ''} · {dayLabel}
-                  </p>
-                  <h1 className="text-3xl font-bold text-gray-900">{profile.employee}</h1>
-                  <p className="text-gray-600 mt-1">
-                    {profile.department} · {profile.location} · {profile.shiftLabel}
-                    {profile.isOffDay && ' · off day'}
-                  </p>
-                </div>
-                {isToday ? (
-                  <span className={STATUS_BADGE[profile.status] || 'badge-danger'}>
-                    {STATUS_LABEL[profile.status] || profile.status}
-                  </span>
-                ) : (
-                  <span className="badge-info">Closed day</span>
-                )}
-              </div>
-
-              {profile.currentTitle && (
-                <p className="mt-4 text-sm text-gray-700">
-                  Currently: <span className="font-medium">{profile.currentTitle}</span>
-                </p>
-              )}
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                <Stat label="Active" value={fmtMins(profile.today.activeMins)} />
-                <Stat label="Idle" value={fmtMins(profile.today.idleMins)} />
-                <Stat label="Non-work" value={fmtMins(profile.today.nonWorkMins)} accent={profile.today.nonWorkMins > 30 ? 'text-red-600' : ''} />
-                <Stat label="Alerts" value={profile.today.alertsCount} accent={profile.today.alertsCount > 0 ? 'text-red-600' : ''} />
-              </div>
-            </div>
+            <div className="analytics-grid wide mt-6"><section className="profile-hero"><div className="flex items-start justify-between gap-4"><div><p>{profile.pcId}{profile.shiftKind?` · ${profile.shiftKind}`:''} · {dayLabel}</p><h1>{profile.employee}</h1><p>{profile.department} · {profile.location} · {profile.shiftLabel}{profile.isOffDay?' · off day':''}</p></div><span className="badge-info">{isToday?(STATUS_LABEL[profile.status]||profile.status):'Closed day'}</span></div><footer>Currently: {profile.currentTitle||'Nothing reported yet'}</footer></section><Panel title="Time split" subtitle="Recorded minutes for the selected day"><Donut unit="minutes" rows={[{label:'Active',value:profile.today.activeMins,color:'#111'},{label:'Idle',value:profile.today.idleMins,color:'#bfbdb7'}]}/><p className="text-xs text-slate mt-3">Non-work is included in active time: {fmtMins(profile.today.nonWorkMins)}</p></Panel></div>
+            <StatGrid items={[{label:'Active',value:fmtMins(profile.today.activeMins)},{label:'Idle',value:fmtMins(profile.today.idleMins)},{label:'Non-work',value:fmtMins(profile.today.nonWorkMins)},{label:'Alerts',value:profile.today.alertsCount,tone:'danger'}]}/>
 
             {!isToday && !profile.hasReport && (
               <div className="card border-l-4 border-gray-300 bg-gray-50 mt-6">
@@ -286,3 +254,4 @@ function Stat({ label, value, accent = '' }) {
     </div>
   );
 }
+

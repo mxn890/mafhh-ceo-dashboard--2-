@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import {countBy} from '../lib/dashboard-analytics';
 import { useRouter } from 'next/navigation';
+import {Panel,Ranking,StatGrid} from '../components/common/Analytics';
 import Navigation from '../components/common/Navigation';
 
 const STATUS_BADGE = { OnTime: 'badge-success', Late: 'badge-warning', HalfDay: 'badge-warning', Absent: 'badge-danger', Leave: 'badge-info' };
@@ -81,7 +84,7 @@ export default function EmployeesPage() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, department, ID"
+            aria-label="Search employees" placeholder="Search name, department, ID"
             className="w-full sm:w-72 border border-line px-3 py-2 text-sm bg-paper focus:outline-none focus:border-ink"
           />
         </div>
@@ -98,42 +101,10 @@ export default function EmployeesPage() {
           <p className="text-slate text-sm">No employees match this search.</p>
         )}
 
-        <div className="space-y-8">
-          {grouped.map(([department, people]) => (
-            <div key={department}>
-              <h2 className="font-display text-sm font-semibold text-ink mb-3 pb-2 border-b border-line">
-                {department} <span className="text-slate-light font-normal">· {people.length}</span>
-              </h2>
-              <div className="bg-paper border border-line">
-                {people.map((emp, i) => {
-                  const todayStatus = attendanceByEmployee[emp.employeeId];
-                  return (
-                    <div
-                      key={emp._id}
-                      onClick={() => router.push(`/attendance/employee/${emp.employeeId}`)}
-                      className={`flex items-center justify-between gap-4 px-4 py-3 cursor-pointer hover:bg-mist transition-colors ${i !== people.length - 1 ? 'border-b border-line' : ''}`}
-                    >
-                      <div className="min-w-0 flex items-center gap-4">
-                        <span className="font-tabular text-xs text-slate-light w-24 shrink-0">{emp.employeeId || '—'}</span>
-                        <span className="font-medium text-sm text-ink truncate">{emp.name}</span>
-                      </div>
-                      <div className="flex items-center gap-4 shrink-0">
-                        <span className="font-tabular text-xs text-slate hidden sm:block">{emp.shift_timing || '—'}</span>
-                        {todayStatus ? (
-                          <span className={STATUS_BADGE[todayStatus] || 'badge-info'}>{todayStatus}</span>
-                        ) : (
-                          <span className="badge-info">No data</span>
-                        )}
-                        <span className="text-slate-light">→</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        {employees && <StatGrid items={[{label:'Employees',value:employees.length,tone:'dark'},{label:'Departments',value:new Set(employees.map(e=>e.department||'Unassigned')).size},{label:'Absent today',value:Object.values(attendanceByEmployee).filter(s=>s==='Absent').length,tone:'danger'}]}/>}
+        <div className="employee-layout"><div className="department-list">{grouped.map(([department,people])=><section className="analytics-panel" key={department}><header><h2>{department} <span className="text-slate font-normal">· {people.length}</span></h2></header><div className="employee-table-scroll"><table className="employee-table"><thead><tr><th>Employee</th><th>Emp ID</th><th>Shift</th><th>Status</th><th><span className="sr-only">Details</span></th></tr></thead><tbody>{people.map(emp=><tr key={emp._id||emp.employeeId}><td><Link className="employee-name" href={`/attendance/employee/${emp.employeeId}`}><span className="employee-avatar" aria-hidden="true">{String(emp.name||'').split(/\s+/).slice(0,2).map(s=>s[0]).join('')}</span>{emp.name}</Link></td><td>{emp.employeeId||'—'}</td><td>{emp.shift_timing||'—'}</td><td><span className={STATUS_BADGE[attendanceByEmployee[emp.employeeId]]||'badge-info'}>{attendanceByEmployee[emp.employeeId]||'No data'}</span></td><td><Link aria-label={`View attendance for ${emp.name}`} href={`/attendance/employee/${emp.employeeId}`} className="round-arrow">→</Link></td></tr>)}</tbody></table></div></section>)}</div><aside><Panel title="Departments" subtitle={employees?`${new Set(employees.map(e=>e.department||'Unassigned')).size} departments`:''}>{employees&&<div className="department-index">{countBy(employees,e=>e.department||'Unassigned').sort((a,b)=>a.label.localeCompare(b.label)).map(d=><button key={d.label} onClick={()=>setQuery(d.label)}><span className="employee-avatar">{d.label[0]}</span><span>{d.label}</span><b>{d.value}</b></button>)}{query&&<button onClick={()=>setQuery('')}>Show all employees →</button>}</div>}</Panel></aside></div>
       </main>
     </div>
   );
 }
+

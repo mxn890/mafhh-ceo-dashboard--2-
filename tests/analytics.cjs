@@ -1,0 +1,5 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+(async()=>{const source=fs.readFileSync('app/lib/dashboard-analytics.js','utf8'),mod=new vm.SourceTextModule(source);await mod.link(()=>{});await mod.evaluate();const A=mod.namespace;
+const pcs=[{status:'ONLINE',pcId:'PC-10',seatId:'PC-10-day'},{status:'OFFLINE',pcId:'PC-10',seatId:'PC-10-night'},{status:'IDLE',pcId:'PC-17'}];assert.deepEqual(Array.from(A.pcStatusRows(pcs),x=>x.value),[1,1,1]);assert.equal(A.countBy(pcs,p=>p.pcId).find(x=>x.label==='PC-10').value,2);
+assert.deepEqual(Array.from(A.severityRows([{severity:'HIGH'},{severity:'high'},{severity:'medium'}]),x=>x.value),[2,1,0]);assert.equal(A.shipmentRows({Pending:253,Active:50,Delayed:1,Completed:276}).reduce((n,x)=>n+x.value,0),580);assert.deepEqual(Array.from(A.shipmentRows({Active:NaN,Completed:-10}),x=>x.value),[0,0,0,0]);assert.equal(A.countBy([],x=>x.department).length,0);assert.equal(A.finite(Infinity),0);assert.equal(A.finite(undefined),0);
+console.log('PASS actual-data chart counts, dual-shift seat preservation, severity casing, shipment totals, empty/invalid data');})();
