@@ -8,8 +8,8 @@ export function Panel({title,subtitle,children,className=''}) {
 export function StatGrid({items}) {
   return <div className="stat-grid" style={{'--stat-columns':items.length}}>{items.map(({label,value,of,tone,href,onClick},i)=>{
     const content=<><span className="stat-label">{label}</span><strong>{value??'—'}{of!=null&&<small>/{of}</small>}</strong><span className="stat-symbol" aria-hidden="true">{tone==='danger'?'!':tone==='dark'?'◔':'↗'}</span></>;
-    const props={className:`stat-tile ${tone||''}`,key:label};
-    return href?<Link {...props} href={href}>{content}</Link>:onClick?<button {...props} type="button" onClick={onClick}>{content}</button>:<div {...props}>{content}</div>;
+    const props={className:`stat-tile ${tone||''}`};
+    return href?<Link key={label} {...props} href={href}>{content}</Link>:onClick?<button key={label} {...props} type="button" onClick={onClick}>{content}</button>:<div key={label} {...props}>{content}</div>;
   })}</div>;
 }
 export function Donut({rows,unit='records'}) {
