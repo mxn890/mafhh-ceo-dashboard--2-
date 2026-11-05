@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import Link from 'next/link';
 import Navigation from './components/common/Navigation';
-import {StatGrid,OverviewCharts,AlertActivity,QuickAccess} from './components/common/Analytics';
+import {StatGrid,OverviewCharts,AlertActivity,RecentAlerts} from './components/common/Analytics';
 import {useLivePolling} from './lib/useLivePolling';
 
 export default function Homepage(){
@@ -25,7 +25,7 @@ export default function Homepage(){
   <div className="quick-tiles">{shortcuts.map(([href,title,detail])=><Link className="quick-tile" key={href} href={href}><h2>{title}<span className="round-arrow" aria-hidden="true">↗</span></h2><p>{detail}</p></Link>)}</div>
   <StatGrid items={[{label:'Active PCs',value:pc?.summary?.online,of:pc?.summary?.total,href:'/module4',tone:'dark'},{label:'PC alerts today',value:pc?.summary?.alertsToday,href:'/alerts',tone:'danger'},{label:'Shipments pending',value:shipments?.Pending,href:'/shipments'},{label:'Shipments in transit',value:shipments?.Active,href:'/shipments'},{label:'Employees',value:employees?.length,href:'/employees'}]}/>
   {Object.keys(errors).length>0&&<p className="load-note" role="status">Some sources are unavailable: {Object.keys(errors).join(', ')}. Retrying automatically.</p>}
-  <div className="analytics-grid overview-feature-grid"><AlertActivity alerts={alerts}/><QuickAccess/></div>
+  <div className="analytics-grid overview-feature-grid"><AlertActivity alerts={alerts}/><RecentAlerts alerts={alerts}/></div>
   <OverviewCharts pc={pc} shipments={shipments} employees={employees} attendance={attendance} alerts={alerts}/>
  </main></div>;
 }

@@ -68,3 +68,9 @@ export function formatShift(value) {
   const start=clock(h1,m1,a1), end=clock(h2,m2,a2);
   return start && end ? `${start}–${end}` : raw.replace(/\s+/g, ' ');
 }
+
+// Current dashboard label requested by the owner; stored source records stay intact.
+export function formatPCEmployee(employee,pcId) {
+  const name=String(employee??'').trim();
+  return pcId==='PC-04' && /^muss?ab$/i.test(name) ? 'Jawad' : (name||'Unassigned');
+}

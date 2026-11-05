@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {Panel,Donut,StatGrid} from '../../components/common/Analytics';
 import Navigation from '../../components/common/Navigation';
 import DayPicker from '../../components/common/DayPicker';
-import {formatMinutes as fmtMins,formatWhen as fmtWhen,formatClock as fmtClock,formatPercent,formatAlertText,formatShift} from '../../lib/display-format';
+import {formatMinutes as fmtMins,formatWhen as fmtWhen,formatClock as fmtClock,formatPercent,formatAlertText,formatShift,formatPCEmployee} from '../../lib/display-format';
 import { lastNDays } from '../../lib/dateUtils';
 
 const STATUS_BADGE = { ONLINE: 'badge-success', IDLE: 'badge-warning', OFFLINE: 'badge-danger' };
@@ -98,7 +98,7 @@ export default function EmployeeProfilePage({ params }) {
 
         {profile && (
           <>
-            <div className="analytics-grid wide mt-6"><section className="profile-hero"><div className="profile-heading"><div><p>{profile.pcId}{profile.shiftKind?` · ${profile.shiftKind}`:''} · {dayLabel}</p><h1>{profile.employee}</h1><p>{profile.department} · {profile.location} · {formatShift(profile.shiftLabel)}{profile.isOffDay?' · off day':''}</p></div><span className="badge-info">{isToday?(STATUS_LABEL[profile.status]||profile.status):'Closed day'}</span></div><footer>Currently: {profile.currentTitle||'Nothing reported yet'}</footer></section><Panel title="Time split" subtitle="Recorded minutes for the selected day"><Donut unit="tracked" format={fmtMins} rows={[{label:'Active',value:profile.today.activeMins,color:'#111'},{label:'Idle',value:profile.today.idleMins,color:'#bfbdb7'}]}/><p className="text-xs text-slate mt-3">Non-work is included in active time: {fmtMins(profile.today.nonWorkMins)}</p></Panel></div>
+            <div className="analytics-grid wide mt-6"><section className="profile-hero"><div className="profile-heading"><div><p>{profile.pcId}{profile.shiftKind?` · ${profile.shiftKind}`:''} · {dayLabel}</p><h1>{formatPCEmployee(profile.employee,profile.pcId)}</h1><p>{profile.department} · {profile.location} · {formatShift(profile.shiftLabel)}{profile.isOffDay?' · off day':''}</p></div><span className="badge-info">{isToday?(STATUS_LABEL[profile.status]||profile.status):'Closed day'}</span></div><footer>Currently: {profile.currentTitle||'Nothing reported yet'}</footer></section><Panel title="Time split" subtitle="Recorded minutes for the selected day"><Donut unit="tracked" format={fmtMins} rows={[{label:'Active',value:profile.today.activeMins,color:'#111'},{label:'Idle',value:profile.today.idleMins,color:'#bfbdb7'}]}/><p className="text-xs text-slate mt-3">Non-work is included in active time: {fmtMins(profile.today.nonWorkMins)}</p></Panel></div>
             <StatGrid items={[{label:'Active',value:fmtMins(profile.today.activeMins)},{label:'Idle',value:fmtMins(profile.today.idleMins)},{label:'Non-work',value:fmtMins(profile.today.nonWorkMins)},{label:'Alerts',value:profile.today.alertsCount,tone:'danger'}]}/>
 
             {!isToday && !profile.hasReport && (

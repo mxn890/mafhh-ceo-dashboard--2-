@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import {formatWhen as fmtWhen,formatClock as fmtClock,formatAlertText} from '../lib/display-format';
+import {formatWhen as fmtWhen,formatClock as fmtClock,formatAlertText,formatPCEmployee} from '../lib/display-format';
 import {Panel,Ranking,StatGrid} from '../components/common/Analytics';
 import Navigation from '../components/common/Navigation';
 import {countBy,severityRows} from '../lib/dashboard-analytics';
@@ -176,7 +176,7 @@ function AlertsView() {
           </p>
         )}
 
-        {alerts && <div className="alerts-reference-layout"><Panel title={`Alerts · ${visible.length}`}><div className="approved-alert-feed">{visible.map(alert=><article className={`approved-alert-row ${String(alert.severity).toUpperCase()==='HIGH'?'high':''}`} key={alert._id||`${alert.pcId}-${alert.timestamp}`}><span className="alert-row-icon" aria-hidden="true">{String(alert.severity).toUpperCase()==='HIGH'?'△':'◷'}</span><div className="alert-row-copy"><p>{formatAlertText(alert.message)}</p><Link href={`/employees/${alert.seatId||alert.pcId}`}>{alert.pcId} · {alert.employee}</Link></div><time>{fmtWhen(alert.timestamp)}</time><span className={SEVERITY_BADGE[String(alert.severity).toUpperCase()]||'badge-info'}>{alert.severity}</span><span className={alert.acknowledged?'acknowledged-label':'open-label'}>{alert.acknowledged?'acknowledged':'• open'}</span>{!alert.acknowledged&&<button type="button" disabled={acking===alert._id} onClick={()=>acknowledge(alert._id)} className="btn-secondary btn-sm">{acking===alert._id?'Saving…':'Acknowledge'}</button>}</article>)}</div></Panel><aside><Panel title="By severity"><Ranking rows={severityRows(visible)}/></Panel><Panel title="Alerts by PC"><Ranking rows={countBy(visible,a=>`${a.pcId||'Unassigned'} · ${a.employee||''}`)}/></Panel></aside></div>}
+        {alerts && <div className="alerts-reference-layout"><Panel title={`Alerts · ${visible.length}`}><div className="approved-alert-feed">{visible.map(alert=><article className={`approved-alert-row ${String(alert.severity).toUpperCase()==='HIGH'?'high':''}`} key={alert._id||`${alert.pcId}-${alert.timestamp}`}><span className="alert-row-icon" aria-hidden="true">{String(alert.severity).toUpperCase()==='HIGH'?'△':'◷'}</span><div className="alert-row-copy"><p>{formatAlertText(alert.message)}</p><Link href={`/employees/${alert.seatId||alert.pcId}`}>{alert.pcId} · {formatPCEmployee(alert.employee,alert.pcId)}</Link></div><time>{fmtWhen(alert.timestamp)}</time><span className={SEVERITY_BADGE[String(alert.severity).toUpperCase()]||'badge-info'}>{alert.severity}</span><span className={alert.acknowledged?'acknowledged-label':'open-label'}>{alert.acknowledged?'acknowledged':'• open'}</span>{!alert.acknowledged&&<button type="button" disabled={acking===alert._id} onClick={()=>acknowledge(alert._id)} className="btn-secondary btn-sm">{acking===alert._id?'Saving…':'Acknowledge'}</button>}</article>)}</div></Panel><aside><Panel title="By severity"><Ranking rows={severityRows(visible)}/></Panel><Panel title="Alerts by PC"><Ranking rows={countBy(visible,a=>`${a.pcId||'Unassigned'} · ${formatPCEmployee(a.employee,a.pcId)}`)}/></Panel></aside></div>}
       </main>
     </div>
   );
