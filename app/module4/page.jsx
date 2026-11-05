@@ -81,7 +81,7 @@ export default function Module4Page() {
         )}
 
         {snapshot && <><StatGrid items={[
-          {label:'Active',value:snapshot.summary.online,tone:'dark'},
+          {label:'Active',value:snapshot.summary.online,tone:'dark',ringRatio:snapshot.summary.total?snapshot.summary.online/snapshot.summary.total:0},
           {label:'Idle',value:snapshot.summary.idle},
           {label:'No signal',value:snapshot.summary.offline},
           {label:'Alerts today',value:snapshot.summary.alertsToday,tone:'danger'},

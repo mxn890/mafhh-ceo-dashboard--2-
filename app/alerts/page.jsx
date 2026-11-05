@@ -4,8 +4,9 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {formatWhen as fmtWhen,formatClock as fmtClock,formatAlertText} from '../lib/display-format';
-import {AlertCharts,StatGrid} from '../components/common/Analytics';
+import {Panel,Ranking,StatGrid} from '../components/common/Analytics';
 import Navigation from '../components/common/Navigation';
+import {countBy,severityRows} from '../lib/dashboard-analytics';
 import DayPicker from '../components/common/DayPicker';
 import { lastNDays } from '../lib/dateUtils';
 
@@ -148,7 +149,7 @@ function AlertsView() {
           </div>
         )}
 
-        {alerts && <><div className="mt-6"><StatGrid items={[{label:'Total alerts',value:alerts.length,tone:'dark'},{label:'High severity',value:alerts.filter(a=>String(a.severity).toUpperCase()==='HIGH').length,tone:'danger'},{label:'Open',value:alerts.filter(a=>!a.acknowledged).length},{label:'Acknowledged',value:alerts.filter(a=>a.acknowledged).length}]}/></div><AlertCharts alerts={alerts}/></>}
+        {alerts && <><div className="mt-6"><StatGrid items={[{label:'High severity',value:alerts.filter(a=>String(a.severity).toUpperCase()==='HIGH').length,tone:'danger'},{label:'Medium severity',value:alerts.filter(a=>String(a.severity).toUpperCase()==='MEDIUM').length},{label:'Open',value:alerts.filter(a=>!a.acknowledged).length},{label:'Acknowledged',value:alerts.filter(a=>a.acknowledged).length}]}/></div></>}
         <div className="flex flex-wrap gap-2 mt-6 mb-6">
           {['all', 'HIGH', 'MEDIUM', 'LOW'].map((s) => (
             <button
@@ -175,57 +176,7 @@ function AlertsView() {
           </p>
         )}
 
-        {alerts && visible.length > 0 && (
-          <div className="card overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">When</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">PC / Employee</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Message</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Severity</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Status</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {visible.map((alert) => (
-                  <tr key={alert._id || `${alert.pcId}-${alert.timestamp}`} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{fmtWhen(alert.timestamp)}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <Link href={`/employees/${alert.seatId || alert.pcId}`} className="font-medium text-gray-900 hover:text-blue-600">
-                        {alert.pcId}
-                      </Link>
-                      <span className="text-gray-500"> · {alert.employee}</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{formatAlertText(alert.message)}</td>
-                    <td className="px-6 py-4">
-                      <span className={SEVERITY_BADGE[String(alert.severity).toUpperCase()] || 'badge-info'}>{alert.severity}</span>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      {alert.acknowledged ? (
-                        <span className="text-gray-500">acknowledged</span>
-                      ) : (
-                        <span className="text-orange-600 font-medium">open</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {!alert.acknowledged && (
-                        <button
-                          onClick={() => acknowledge(alert._id)}
-                          disabled={acking === alert._id}
-                          className="btn-secondary btn-sm"
-                        >
-                          {acking === alert._id ? 'Saving...' : 'Acknowledge'}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {alerts && <div className="alerts-reference-layout"><Panel title={`Alerts · ${visible.length}`}><div className="approved-alert-feed">{visible.map(alert=><article className={`approved-alert-row ${String(alert.severity).toUpperCase()==='HIGH'?'high':''}`} key={alert._id||`${alert.pcId}-${alert.timestamp}`}><span className="alert-row-icon" aria-hidden="true">{String(alert.severity).toUpperCase()==='HIGH'?'△':'◷'}</span><div className="alert-row-copy"><p>{formatAlertText(alert.message)}</p><Link href={`/employees/${alert.seatId||alert.pcId}`}>{alert.pcId} · {alert.employee}</Link></div><time>{fmtWhen(alert.timestamp)}</time><span className={SEVERITY_BADGE[String(alert.severity).toUpperCase()]||'badge-info'}>{alert.severity}</span><span className={alert.acknowledged?'acknowledged-label':'open-label'}>{alert.acknowledged?'acknowledged':'• open'}</span>{!alert.acknowledged&&<button type="button" disabled={acking===alert._id} onClick={()=>acknowledge(alert._id)} className="btn-secondary btn-sm">{acking===alert._id?'Saving…':'Acknowledge'}</button>}</article>)}</div></Panel><aside><Panel title="By severity"><Ranking rows={severityRows(visible)}/></Panel><Panel title="Alerts by PC"><Ranking rows={countBy(visible,a=>`${a.pcId||'Unassigned'} · ${a.employee||''}`)}/></Panel></aside></div>}
       </main>
     </div>
   );

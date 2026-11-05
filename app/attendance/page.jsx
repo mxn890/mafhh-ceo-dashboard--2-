@@ -62,16 +62,7 @@ export default function AttendancePage() {
 
         {data && (
           <>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-line mb-6">
-              {Object.entries(data.summary).map(([label, value]) => (
-                <div key={label} className="bg-paper text-center py-4">
-                  <p className="text-xs text-slate mb-1">{label}</p>
-                  <p className="font-tabular text-2xl font-semibold text-ink">{value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="analytics-grid two"><Panel title="Attendance distribution" subtitle="Today's recorded statuses"><Donut rows={Object.entries(data.summary).map(([label,value],i)=>({label,value,color:['#111','#c8102e','#777','#bbb','#ddd'][i%5]}))} unit="employees"/></Panel><Panel title="Employees by department"><Ranking rows={countBy(data.rows,r=>r.department||'Unassigned')}/></Panel></div>
+            <div className="attendance-reference-summary"><section className="analytics-panel"><h2>Present Summary</h2><div>{['OnTime','Late','HalfDay'].map(label=><div key={label}><span>{label}</span><strong>{data.summary[label]??0}</strong></div>)}</div></section><section className="analytics-panel absent-summary"><h2>Absent Summary</h2><span>Absent</span><strong>{data.summary.Absent??0}</strong></section><section className="analytics-panel"><h2>Away Summary</h2><span>Leave</span><strong>{data.summary.Leave??0}</strong></section></div>
             {liveData && (
               <div className="mb-6">
                 <p className="font-display text-sm font-semibold text-ink mb-2">
