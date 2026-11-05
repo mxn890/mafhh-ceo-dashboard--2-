@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import {formatMinutes} from '../../lib/display-format';
 import Navigation from '../../components/common/Navigation';
 
 const STATUS_BADGE = { Pending: 'badge-warning', Active: 'badge-success', Delayed: 'badge-danger', Completed: 'badge-success' };
@@ -102,7 +103,7 @@ export default function ShipmentDetailPage({ params }) {
               </div>
 
               {shipment.delayMinutes !== null && shipment.delayMinutes !== undefined && (
-                <p className="mt-4 text-sm text-red-600 font-medium">Delay: {shipment.delayMinutes} minutes</p>
+                <p className="mt-4 text-sm text-red-600 font-medium">Delay: {formatMinutes(shipment.delayMinutes)}</p>
               )}
             </div>
 

@@ -28,6 +28,7 @@ export default function DayPicker({ days, selected, onSelect }) {
         Yesterday
       </button>
       <select
+        aria-label="Select an older day"
         value={olderSelected ? selected : ''}
         onChange={(e) => e.target.value && onSelect(e.target.value)}
         className={
@@ -47,3 +48,4 @@ export default function DayPicker({ days, selected, onSelect }) {
     </div>
   );
 }
+

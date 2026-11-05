@@ -1,14 +1,36 @@
 'use client';
-import {useEffect,useState} from 'react';
+import {useState} from 'react';
 import Link from 'next/link';
 import Navigation from './components/common/Navigation';
-import {Panel,StatGrid,OverviewCharts,Ranking,Bars} from './components/common/Analytics';
-import {countBy} from './lib/dashboard-analytics';
-function ago(at){const m=Math.max(0,Math.floor((Date.now()-new Date(at).getTime())/60000));return m<1?'just now':m<60?`${m}m ago`:`${Math.floor(m/60)}h ago`;}
+import {Panel,StatGrid,OverviewCharts,Bars} from './components/common/Analytics';
+import {shipmentRows} from './lib/dashboard-analytics';
+import {relativeTime,formatAlertText} from './lib/display-format';
+import {useLivePolling} from './lib/useLivePolling';
+
 export default function Homepage(){
  const [pc,setPc]=useState(null),[shipments,setShipments]=useState(null),[employees,setEmployees]=useState(null),[alerts,setAlerts]=useState(null),[attendance,setAttendance]=useState(null),[errors,setErrors]=useState({});
- useEffect(()=>{let cancelled=false;async function load(key,url,done){try{const r=await fetch(url),b=await r.json();if(!r.ok)throw Error(b.error||'Request failed');if(!cancelled)done(b);}catch(e){if(!cancelled)setErrors(v=>({...v,[key]:e.message}));}}
- load('pc','/api/pc-monitoring',setPc);load('shipments','/api/shipments',b=>setShipments(b.summary));load('employees','/api/employees',b=>setEmployees(b.employees||[]));load('alerts','/api/alerts',b=>setAlerts(b.alerts||[]));load('attendance','/api/attendance/overview',setAttendance);return()=>{cancelled=true;};},[]);
- const shortcuts=[['/module4','PC monitoring','Active PCs, idle time and usage'],['/attendance/manager','Attendance manager',"Today's attendance and leave requests"],['/shipments','Shipments','Bookings and flight updates'],['/alerts','Alerts','Items that need your attention']];
- return <div className="min-h-screen bg-mist"><Navigation/><main className="container mx-auto px-4 py-8"><header><h1>Overview</h1><p className="text-sm text-slate">Choose a section below, or review today's totals.</p></header><div className="quick-tiles">{shortcuts.map(([href,title,detail])=><Link className="quick-tile" key={href} href={href}><h2>{title}<span className="round-arrow" aria-hidden="true">↗</span></h2><p>{detail}</p></Link>)}</div><StatGrid items={[{label:'Active PCs',value:pc?.summary?.online,of:pc?.summary?.total,href:'/module4',tone:'dark'},{label:'PC alerts today',value:pc?.summary?.alertsToday,href:'/alerts',tone:'danger'},{label:'Shipments pending',value:shipments?.Pending,href:'/shipments'},{label:'Shipments in transit',value:shipments?.Active,href:'/shipments'},{label:'Employees',value:employees?.length,href:'/employees'}]}/>{Object.keys(errors).length>0&&<p className="load-note" role="status">Some sources are unavailable: {Object.keys(errors).join(', ')}. Available data remains visible; refresh to retry.</p>}<div className="analytics-grid wide"><Panel title="Alert activity" subtitle="Counts from the latest returned alerts">{alerts?<Bars rows={countBy(alerts,a=>a.pcId||'Unassigned')}/>:<p className="chart-empty">{errors.alerts?'Data unavailable':'Loading alerts…'}</p>}</Panel><Panel title="Quick access"><div className="quick-links">{[['/module4','PC Monitoring'],['/employees','Employees'],['/attendance/manager','Attendance manager'],['/attendance','Attendance overview'],['/shipments','Shipments'],['/alerts','All alerts']].map(([href,label])=><Link href={href} key={href}>{label}<span className="round-arrow">→</span></Link>)}</div></Panel></div><OverviewCharts pc={pc} shipments={shipments} employees={employees} attendance={attendance} alerts={alerts}/><div className="overview-bottom"><Panel title="Employees by department" subtitle="Headcount distribution ranked high to low">{employees?<Ranking rows={countBy(employees,e=>e.department||'Unassigned')}/>:<p className="chart-empty">{errors.employees?'Data unavailable':'Loading roster…'}</p>}</Panel><Panel title="Recent alerts"><div className="recent-alerts">{alerts?.slice(0,6).map((a,i)=><div className="recent-alert" key={a._id||i}><div><p>{a.message}</p><small>{ago(a.timestamp)}</small></div><span className={String(a.severity).toUpperCase()==='HIGH'?'badge-danger':'badge-warning'}>{a.severity}</span></div>)}{alerts?.length===0&&<p className="chart-empty">No recent alerts.</p>}{!alerts&&<p className="chart-empty">{errors.alerts?'Data unavailable':'Loading alerts…'}</p>}</div></Panel></div></main></div>;
+ async function load(){
+  async function source(key,url,done){
+   try{const r=await fetch(url),b=await r.json();if(!r.ok)throw Error(b.error||'Request failed');done(b);setErrors(v=>{const next={...v};delete next[key];return next;});}
+   catch(e){setErrors(v=>({...v,[key]:e.message}));}
+  }
+  await Promise.all([
+   source('pc','/api/pc-monitoring',setPc),source('shipments','/api/shipments',b=>setShipments(b.summary)),
+   source('employees','/api/employees',b=>setEmployees(b.employees||[])),source('alerts','/api/alerts',b=>setAlerts(b.alerts||[])),
+   source('attendance','/api/attendance/overview',setAttendance)
+  ]);
+ }
+ useLivePolling(load);
+ const shortcuts=[['/module4','PC monitoring','Status and usage'],['/attendance/manager','Attendance manager','Attendance and leave'],['/shipments','Shipments','Bookings and flights'],['/alerts','Alerts','Items needing attention']];
+ return <div className="min-h-screen bg-mist"><Navigation/><main className="container mx-auto px-4 py-8">
+  <header><h1>Overview</h1><p className="text-sm text-slate">Today's operations at a glance.</p></header>
+  <div className="quick-tiles">{shortcuts.map(([href,title,detail])=><Link className="quick-tile" key={href} href={href}><h2>{title}<span className="round-arrow" aria-hidden="true">↗</span></h2><p>{detail}</p></Link>)}</div>
+  <StatGrid items={[{label:'Active PCs',value:pc?.summary?.online,of:pc?.summary?.total,href:'/module4',tone:'dark'},{label:'PC alerts today',value:pc?.summary?.alertsToday,href:'/alerts',tone:'danger'},{label:'Shipments pending',value:shipments?.Pending,href:'/shipments'},{label:'Shipments in transit',value:shipments?.Active,href:'/shipments'},{label:'Employees',value:employees?.length,href:'/employees'}]}/>
+  {Object.keys(errors).length>0&&<p className="load-note" role="status">Some sources are unavailable: {Object.keys(errors).join(', ')}. Retrying automatically.</p>}
+  <div className="analytics-grid two">
+   <Panel title="Shipments by status">{shipments?<Bars rows={shipmentRows(shipments)}/>:<p className="chart-empty">{errors.shipments?'Data unavailable':'Loading shipments…'}</p>}</Panel>
+   <Panel title="Recent alerts"><div className="recent-alerts">{alerts?.slice(0,4).map((a,i)=><div className="recent-alert" key={a._id||i}><div><p>{formatAlertText(a.message)}</p><small>{relativeTime(a.timestamp)}</small></div><span className={String(a.severity).toUpperCase()==='HIGH'?'badge-danger':'badge-warning'}>{a.severity}</span></div>)}{alerts?.length===0&&<p className="chart-empty">No recent alerts.</p>}{!alerts&&<p className="chart-empty">{errors.alerts?'Data unavailable':'Loading alerts…'}</p>}<Link href="/alerts" className="text-sm text-signal">View all alerts →</Link></div></Panel>
+  </div>
+  <details className="insight-disclosure"><summary>More operational breakdowns</summary><div className="insight-content"><OverviewCharts pc={pc} shipments={shipments} employees={employees} attendance={attendance} alerts={alerts}/></div></details>
+ </main></div>;
 }

@@ -5,32 +5,12 @@ import Link from 'next/link';
 import {Panel,Donut,StatGrid} from '../../components/common/Analytics';
 import Navigation from '../../components/common/Navigation';
 import DayPicker from '../../components/common/DayPicker';
+import {formatMinutes as fmtMins,formatWhen as fmtWhen,formatClock as fmtClock,formatPercent,formatAlertText} from '../../lib/display-format';
 import { lastNDays } from '../../lib/dateUtils';
 
 const STATUS_BADGE = { ONLINE: 'badge-success', IDLE: 'badge-warning', OFFLINE: 'badge-danger' };
 const STATUS_LABEL = { ONLINE: 'Working', IDLE: 'Idle', OFFLINE: 'No signal' };
 const SEVERITY_BADGE = { HIGH: 'badge-danger', MEDIUM: 'badge-warning', LOW: 'badge-info' };
-
-function fmtMins(mins) {
-  const m = Math.round(mins || 0);
-  if (m < 60) return `${m}m`;
-  return `${Math.floor(m / 60)}h ${m % 60}m`;
-}
-
-function fmtWhen(timestamp) {
-  if (!timestamp) return '—';
-  return new Date(timestamp).toLocaleString('en-GB', {
-    timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit', hour12: false,
-    day: '2-digit', month: 'short',
-  });
-}
-
-function fmtClock(timestamp) {
-  if (!timestamp) return '—';
-  return new Date(timestamp).toLocaleTimeString('en-GB', {
-    timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit', hour12: false,
-  });
-}
 
 // Next 14 (the version in this repo's package.json) passes `params` as a
 // plain object, not a Promise — no React.use() needed. If this project is
@@ -118,7 +98,7 @@ export default function EmployeeProfilePage({ params }) {
 
         {profile && (
           <>
-            <div className="analytics-grid wide mt-6"><section className="profile-hero"><div className="flex items-start justify-between gap-4"><div><p>{profile.pcId}{profile.shiftKind?` · ${profile.shiftKind}`:''} · {dayLabel}</p><h1>{profile.employee}</h1><p>{profile.department} · {profile.location} · {profile.shiftLabel}{profile.isOffDay?' · off day':''}</p></div><span className="badge-info">{isToday?(STATUS_LABEL[profile.status]||profile.status):'Closed day'}</span></div><footer>Currently: {profile.currentTitle||'Nothing reported yet'}</footer></section><Panel title="Time split" subtitle="Recorded minutes for the selected day"><Donut unit="minutes" rows={[{label:'Active',value:profile.today.activeMins,color:'#111'},{label:'Idle',value:profile.today.idleMins,color:'#bfbdb7'}]}/><p className="text-xs text-slate mt-3">Non-work is included in active time: {fmtMins(profile.today.nonWorkMins)}</p></Panel></div>
+            <div className="analytics-grid wide mt-6"><section className="profile-hero"><div className="profile-heading"><div><p>{profile.pcId}{profile.shiftKind?` · ${profile.shiftKind}`:''} · {dayLabel}</p><h1>{profile.employee}</h1><p>{profile.department} · {profile.location} · {profile.shiftLabel}{profile.isOffDay?' · off day':''}</p></div><span className="badge-info">{isToday?(STATUS_LABEL[profile.status]||profile.status):'Closed day'}</span></div><footer>Currently: {profile.currentTitle||'Nothing reported yet'}</footer></section><Panel title="Time split" subtitle="Recorded minutes for the selected day"><Donut unit="tracked" format={fmtMins} rows={[{label:'Active',value:profile.today.activeMins,color:'#111'},{label:'Idle',value:profile.today.idleMins,color:'#bfbdb7'}]}/><p className="text-xs text-slate mt-3">Non-work is included in active time: {fmtMins(profile.today.nonWorkMins)}</p></Panel></div>
             <StatGrid items={[{label:'Active',value:fmtMins(profile.today.activeMins)},{label:'Idle',value:fmtMins(profile.today.idleMins)},{label:'Non-work',value:fmtMins(profile.today.nonWorkMins)},{label:'Alerts',value:profile.today.alertsCount,tone:'danger'}]}/>
 
             {!isToday && !profile.hasReport && (
@@ -156,14 +136,14 @@ export default function EmployeeProfilePage({ params }) {
                         <span className="h-2 flex-1 rounded bg-gray-100 overflow-hidden">
                           <span
                             className={`block h-2 rounded ${site.type === 'non-work' ? 'bg-red-400' : site.type === 'work' ? 'bg-blue-500' : 'bg-gray-400'}`}
-                            style={{ width: `${Math.max(4, site.percent)}%` }}
+                            style={{ width: `${Math.min(100, Math.max(0, Number(site.percent) || 0))}%` }}
                           />
                         </span>
-                        <span className="w-16 shrink-0 text-right text-sm text-gray-500">{fmtMins(site.mins)}</span>
+                        <span className="w-20 shrink-0 text-right text-sm text-gray-500 tabular-nums">{fmtMins(site.mins)}</span>
                       </div>
                     ))}
                     <p className="text-xs text-gray-400 pt-2">
-                      {profile.screenTime.totalHours} hours tracked {isToday ? 'today' : 'this day'}
+                      {fmtMins(profile.screenTime.totalMins ?? Number(profile.screenTime.totalHours) * 60)} tracked {isToday ? 'today' : 'this day'}
                     </p>
                   </div>
                 )}
@@ -187,7 +167,7 @@ export default function EmployeeProfilePage({ params }) {
                     {profile.alerts.slice(0, 10).map((alert) => (
                       <div key={alert._id || alert.timestamp} className="flex items-start justify-between gap-3 border-b border-gray-100 pb-3 last:border-0">
                         <div className="min-w-0">
-                          <p className="text-sm text-gray-800 truncate">{alert.message}</p>
+                          <p className="text-sm text-gray-800 truncate">{formatAlertText(alert.message)}</p>
                           <p className="text-xs text-gray-400 mt-0.5">
                             {fmtWhen(alert.timestamp)} · {alert.acknowledged ? 'acknowledged' : 'open'}
                           </p>
@@ -208,7 +188,7 @@ export default function EmployeeProfilePage({ params }) {
                   {isToday ? "Today's report" : 'Report'}
                 </h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Stat label="Productivity score" value={`${profile.dailyReport.productivityScore}%`} />
+                  <Stat label="Productivity score" value={formatPercent(profile.dailyReport.productivityScore)} />
                   <Stat label="Overall" value={profile.dailyReport.overallStatus} />
                   <Stat label="Active" value={fmtMins(profile.dailyReport.totalActiveMins)} />
                   <Stat label="Non-work" value={fmtMins(profile.dailyReport.nonWorkMins)} />
@@ -230,9 +210,9 @@ export default function EmployeeProfilePage({ params }) {
                   <div className="divide-y divide-gray-100">
                     {profile.recentActivity.slice(0, 15).map((log, i) => (
                       <div key={i} className="flex items-center gap-4 py-2 text-sm">
-                        <span className="w-12 shrink-0 text-gray-400">{fmtWhen(log.timestamp).split(' ')[0]}</span>
+                        <span className="w-12 shrink-0 text-gray-400">{fmtClock(log.timestamp)}</span>
                         <span className="flex-1 truncate text-gray-700">{log.currentTab?.title || '—'}</span>
-                        <span className="shrink-0 text-gray-400">{Math.round(log.activeMins || 0)}m</span>
+                        <span className="shrink-0 text-gray-400">{fmtMins(log.activeMins)}</span>
                       </div>
                     ))}
                   </div>

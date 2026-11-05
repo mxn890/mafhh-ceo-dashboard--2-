@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
+import {formatDate as fmtDate} from '../lib/display-format';
 import {ShipmentCharts,StatGrid} from '../components/common/Analytics';
 import Navigation from '../components/common/Navigation';
 import { useLivePolling } from '../lib/useLivePolling';
@@ -9,29 +10,27 @@ import { useLivePolling } from '../lib/useLivePolling';
 const STATUS_BADGE = { Pending: 'badge-warning', Active: 'badge-success', Delayed: 'badge-danger', Completed: 'badge-success' };
 const FILTERS = ['All', 'Pending', 'Active', 'Delayed', 'Completed'];
 
-function fmtDate(d) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-GB', { timeZone: 'Asia/Karachi', day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 export default function ShipmentsPage() {
+  const requestVersion = useRef(0);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
 
   const load = async () => {
+    const version = ++requestVersion.current;
     try {
       const qs = new URLSearchParams();
       if (filter !== 'All') qs.set('status', filter);
       if (search.trim()) qs.set('awb', search.trim());
       const res = await fetch(`/api/shipments?${qs}`);
       const body = await res.json();
+      if (version !== requestVersion.current) return;
       if (!res.ok) throw new Error(body.error || 'Request failed');
       setData(body);
       setError(null);
     } catch (err) {
-      setError(err.message);
+      if (version === requestVersion.current) setError(err.message);
     }
   };
 

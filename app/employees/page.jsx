@@ -77,7 +77,7 @@ export default function EmployeesPage() {
           <div>
             <h1 className="font-display text-3xl font-semibold text-ink mb-1">Employees</h1>
             <p className="text-sm text-slate">
-              {employees ? `${employees.length} people across ${grouped.length} departments` : 'Loading roster…'}
+              {employees ? `${employees.length} people across ${new Set(employees.map(e=>e.department||'Unassigned')).size} departments` : 'Loading roster…'}
             </p>
           </div>
           <input

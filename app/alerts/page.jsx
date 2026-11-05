@@ -1,29 +1,15 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import {formatWhen as fmtWhen,formatClock as fmtClock,formatAlertText} from '../lib/display-format';
 import {AlertCharts,StatGrid} from '../components/common/Analytics';
 import Navigation from '../components/common/Navigation';
 import DayPicker from '../components/common/DayPicker';
 import { lastNDays } from '../lib/dateUtils';
 
 const SEVERITY_BADGE = { HIGH: 'badge-danger', MEDIUM: 'badge-warning', LOW: 'badge-info' };
-
-function fmtWhen(timestamp) {
-  if (!timestamp) return '—';
-  return new Date(timestamp).toLocaleString('en-GB', {
-    timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit', hour12: false,
-    day: '2-digit', month: 'short',
-  });
-}
-
-function fmtClock(timestamp) {
-  if (!timestamp) return '—';
-  return new Date(timestamp).toLocaleTimeString('en-GB', {
-    timeZone: 'Asia/Karachi', hour: '2-digit', minute: '2-digit', hour12: false,
-  });
-}
 
 // Next's app router requires useSearchParams() to sit inside a Suspense
 // boundary, or the build fails during static prerendering. AlertsPage stays
@@ -49,6 +35,7 @@ function AlertsFallback() {
 }
 
 function AlertsView() {
+  const requestVersion = useRef(0);
   const searchParams = useSearchParams();
   const pcFilter = searchParams.get('pcId') || '';
   const seatFilter = searchParams.get('seatId') || '';
@@ -66,6 +53,7 @@ function AlertsView() {
   const isToday = selectedDate === todayStr;
 
   async function load() {
+    const version = ++requestVersion.current;
     try {
       const qs = new URLSearchParams();
       if (pcFilter) qs.set('pcId', pcFilter);
@@ -73,12 +61,13 @@ function AlertsView() {
       qs.set('date', selectedDate);
       const res = await fetch(`/api/alerts?${qs}`);
       const body = await res.json();
+      if (version !== requestVersion.current) return;
       if (!res.ok) throw new Error(body.error || 'Request failed');
       setAlerts(body.alerts);
       setError(null);
       setLastFetchedAt(new Date());
     } catch (err) {
-      setError(err.message);
+      if (version === requestVersion.current) setError(err.message);
     }
   }
 
@@ -89,13 +78,14 @@ function AlertsView() {
     // Same reasoning as the employee profile page: a closed day can't
     // change, so only poll — and only react to the tab regaining focus —
     // while looking at today.
-    if (!isToday) return undefined;
+    if (!isToday) return () => { requestVersion.current++; };
 
     const timer = setInterval(load, 30000);
     const onVisible = () => { if (document.visibilityState === 'visible') load(); };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
     return () => {
+      requestVersion.current++;
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
@@ -106,7 +96,7 @@ function AlertsView() {
   const visible = useMemo(() => {
     if (!alerts) return [];
     return alerts.filter((a) => {
-      if (severity !== 'all' && a.severity !== severity) return false;
+      if (severity !== 'all' && String(a.severity).toUpperCase() !== severity) return false;
       if (onlyOpen && a.acknowledged) return false;
       return true;
     });
@@ -115,12 +105,15 @@ function AlertsView() {
   async function acknowledge(alertId) {
     setAcking(alertId);
     try {
-      await fetch('/api/alerts', {
+      const response = await fetch('/api/alerts', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ alertId, acknowledgedBy: 'CEO Dashboard' }),
       });
+      if (!response.ok) throw new Error('Could not acknowledge alert. Please retry.');
       await load();
+    } catch (error) {
+      setError(error.message);
     } finally {
       setAcking(null);
     }
@@ -155,7 +148,7 @@ function AlertsView() {
           </div>
         )}
 
-        {alerts && <><div className="mt-6"><StatGrid items={[{label:'Total alerts',value:alerts.length,tone:'dark'},{label:'High severity',value:alerts.filter(a=>a.severity==='HIGH').length,tone:'danger'},{label:'Open',value:alerts.filter(a=>!a.acknowledged).length},{label:'Acknowledged',value:alerts.filter(a=>a.acknowledged).length}]}/></div><AlertCharts alerts={alerts}/></>}
+        {alerts && <><div className="mt-6"><StatGrid items={[{label:'Total alerts',value:alerts.length,tone:'dark'},{label:'High severity',value:alerts.filter(a=>String(a.severity).toUpperCase()==='HIGH').length,tone:'danger'},{label:'Open',value:alerts.filter(a=>!a.acknowledged).length},{label:'Acknowledged',value:alerts.filter(a=>a.acknowledged).length}]}/></div><AlertCharts alerts={alerts}/></>}
         <div className="flex flex-wrap gap-2 mt-6 mb-6">
           {['all', 'HIGH', 'MEDIUM', 'LOW'].map((s) => (
             <button
@@ -205,9 +198,9 @@ function AlertsView() {
                       </Link>
                       <span className="text-gray-500"> · {alert.employee}</span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{alert.message}</td>
+                    <td className="px-6 py-4 text-sm text-gray-700">{formatAlertText(alert.message)}</td>
                     <td className="px-6 py-4">
-                      <span className={SEVERITY_BADGE[alert.severity] || 'badge-info'}>{alert.severity}</span>
+                      <span className={SEVERITY_BADGE[String(alert.severity).toUpperCase()] || 'badge-info'}>{alert.severity}</span>
                     </td>
                     <td className="px-6 py-4 text-sm">
                       {alert.acknowledged ? (

@@ -1,0 +1,11 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+(async()=>{const mod=new vm.SourceTextModule(fs.readFileSync('app/lib/display-format.js','utf8'));await mod.link(()=>{});await mod.evaluate();const F=mod.namespace;
+assert.equal(F.formatMinutes(59.9999999),'1h 0m');assert.equal(F.formatMinutes(135.6666667),'2h 16m');assert.equal(F.formatMinutes(-5),'0m');
+for(const value of [null,undefined,'',Infinity,NaN])assert.equal(F.formatMinutes(value),'—');
+assert.equal(F.formatCount(1200.0000002),'1,200');assert.equal(F.formatPercent(94.666666),'95%');assert.equal(F.formatPercent(105),'100%');
+assert.equal(F.formatClock('2026-11-04T21:34:00Z'),'02:34');assert.equal(F.formatClock('bad'),'—');assert.equal(F.formatDate(null),'—');
+assert.equal(F.relativeTime('bad'),'not reported');assert.equal(F.relativeTime('2026-11-03T00:00:00Z',Date.parse('2026-11-05T00:00:00Z')),'2d ago');
+assert.equal(F.formatAlertText('Idle for 25.333333 minutes. AWB 122-1011-6772.'),'Idle for 25m. AWB 122-1011-6772.');
+assert.equal(F.formatAlertText('Used 1.5 hours; idle 30.8 seconds.'),'Used 1h 30m; idle 31s.');
+assert.equal(F.formatAlertText('Flight SV739 2026-11-04 at 02:30, rate 12.75.'),'Flight SV739 2026-11-04 at 02:30, rate 12.75.');
+console.log('PASS duration precision, PKT times, invalid values and evidence-safe alert text');})();
