@@ -1,4 +1,5 @@
 'use client';
+import {formatShift} from '../lib/display-format';
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -106,7 +107,7 @@ export default function AttendancePage() {
                         <p className="font-tabular text-xs text-slate-light">{r.employeeId}</p>
                       </td>
                       <td className="px-4 py-3 text-slate">{r.department}</td>
-                      <td className="px-4 py-3 font-tabular text-slate">{r.shift_timing || '—'}</td>
+                      <td className="px-4 py-3 font-tabular text-slate">{formatShift(r.shift_timing)}</td>
                       <td className="px-4 py-3 font-tabular text-ink">{fmtTime(r.checkInTime)}</td>
                       <td className="px-4 py-3 font-tabular text-ink">{fmtTime(r.checkOutTime)}</td>
                       <td className="px-4 py-3"><span className={STATUS_BADGE[r.status] || 'badge-info'}>{r.status}</span></td>

@@ -49,3 +49,22 @@ export function formatAlertText(value) {
     return formatMinutes(value);
   });
 }
+// Canonical display/grouping only; the stored shift and attendance rules are unchanged.
+export function formatShift(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return 'Not set';
+  const cleaned = raw.toUpperCase().replace(/([AP])\s*\.?\s*M\.?/g, '$1M').replace(/[–—−]/g, '-');
+  const match = cleaned.match(/^\s*(\d{1,2})(?:[:.](\d{2}))?\s*(AM|PM)?\s*(?:-|TO)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(AM|PM)?\s*$/);
+  if (!match) return raw.replace(/\s+/g, ' ');
+  const [,h1,m1,a1,h2,m2,a2] = match;
+  // A single AM/PM marker is ambiguous; do not invent a start/end period.
+  if (Boolean(a1) !== Boolean(a2)) return raw.replace(/\s+/g, ' ');
+  function clock(hour, minute='00', period) {
+    let h=Number(hour), m=Number(minute);
+    if (m>59 || (period ? h<1 || h>12 : h>23)) return null;
+    if (period) h=h%12+(period==='PM'?12:0);
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+  const start=clock(h1,m1,a1), end=clock(h2,m2,a2);
+  return start && end ? `${start}–${end}` : raw.replace(/\s+/g, ' ');
+}

@@ -1,4 +1,5 @@
 'use client';
+import {formatShift} from '../../../lib/display-format';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -40,7 +41,7 @@ export default function EmployeeAttendanceDetail() {
         {data && (
           <>
             <h1 className="font-display text-2xl font-semibold text-ink mb-1">{data.employee.name}</h1>
-            <p className="font-tabular text-sm text-slate-light mb-6">{data.employee.employeeId} · {data.employee.department} · {data.employee.shift_timing || '—'}</p>
+            <p className="font-tabular text-sm text-slate-light mb-6">{data.employee.employeeId} · {data.employee.department} · {formatShift(data.employee.shift_timing)}</p>
 
             <div className="grid grid-cols-5 gap-px bg-line mb-6">
               {Object.entries(data.summary).map(([label, value]) => (
@@ -89,3 +90,4 @@ export default function EmployeeAttendanceDetail() {
     </div>
   );
 }
+

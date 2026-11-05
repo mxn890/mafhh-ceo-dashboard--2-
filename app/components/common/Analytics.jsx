@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import {formatCount,formatMinutes} from '../../lib/display-format';
+import {formatCount,formatMinutes,formatShift} from '../../lib/display-format';
 import { countBy, finite, pcStatusRows, severityRows, shipmentRows } from '../../lib/dashboard-analytics';
 
 export function Panel({title,subtitle,children,className=''}) {
@@ -31,7 +31,7 @@ export function OverviewCharts({pc,shipments,employees,attendance,alerts}) {
    <Panel title="PC status" subtitle="Current monitoring signal">{pc?<Donut rows={pcStatusRows(pc.pcs||[])} unit="seats"/>:<Unavailable/>}</Panel>
    <Panel title="Alerts by severity" subtitle="Latest returned alerts">{alerts?<Donut rows={severityRows(alerts)} unit="alerts"/>:<Unavailable/>}</Panel>
    <Panel title="Attendance" subtitle="Today's recorded statuses">{attendance?<Donut rows={Object.entries(attendance.summary||{}).map(([label,value],i)=>({label,value,color:['#111','#C8102E','#777','#bfbcb5','#e3d7d7'][i%5]}))} unit="employees"/>:<Unavailable/>}</Panel>
-   <Panel title="Employees by shift" subtitle="Current employee roster">{employees?<Donut rows={countBy(employees,e=>e.shift_timing||'Not set')} unit="people"/>:<Unavailable/>}</Panel>
+   <Panel title="Employees by shift" subtitle="Current employee roster">{employees?<Donut rows={countBy(employees,e=>formatShift(e.shift_timing))} unit="people"/>:<Unavailable/>}</Panel>
   </div>
   <div className="analytics-grid three">
    <Panel title="Shipments" subtitle="Overview by status">{shipments?<Bars rows={shipmentRows(shipments)}/>:<Unavailable/>}</Panel>
@@ -46,7 +46,7 @@ export function PCCharts({pcs}) {
 export function ShipmentCharts({summary}) {
  return <details className="insight-disclosure"><summary>Shipment status chart</summary><div className="insight-content"><Panel title="Shipments by status"><Bars rows={shipmentRows(summary)}/></Panel></div></details>;
 }
-export function EmployeeCharts({employees}) {return <div className="analytics-grid two"><Panel title="Employees by department" subtitle="Current employee roster"><Ranking rows={countBy(employees,e=>e.department||'Unassigned')}/></Panel><Panel title="Employees by shift" subtitle="Assigned shift timings"><Donut rows={countBy(employees,e=>e.shift_timing||'Not set')} unit="people"/></Panel></div>;}
+export function EmployeeCharts({employees}) {return <div className="analytics-grid two"><Panel title="Employees by department" subtitle="Current employee roster"><Ranking rows={countBy(employees,e=>e.department||'Unassigned')}/></Panel><Panel title="Employees by shift" subtitle="Assigned shift timings"><Donut rows={countBy(employees,e=>formatShift(e.shift_timing))} unit="people"/></Panel></div>;}
 export function AlertCharts({alerts}) {return <details className="insight-disclosure"><summary>Alert breakdowns</summary><div className="insight-content"><div className="analytics-grid two"><Panel title="Alerts by severity" subtitle="Selected day and PC"><Donut rows={severityRows(alerts)} unit="alerts"/></Panel><Panel title="Alerts by employee" subtitle="Selected day and PC"><Ranking rows={countBy(alerts,a=>a.employee||a.pcId||'Unassigned')}/></Panel></div></div></details>;}
 export const mins = formatMinutes;
 function Unavailable(){return <p className="chart-empty">Data unavailable</p>;}

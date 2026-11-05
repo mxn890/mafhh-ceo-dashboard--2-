@@ -8,4 +8,7 @@ assert.equal(F.relativeTime('bad'),'not reported');assert.equal(F.relativeTime('
 assert.equal(F.formatAlertText('Idle for 25.333333 minutes. AWB 122-1011-6772.'),'Idle for 25m. AWB 122-1011-6772.');
 assert.equal(F.formatAlertText('Used 1.5 hours; idle 30.8 seconds.'),'Used 1h 30m; idle 31s.');
 assert.equal(F.formatAlertText('Flight SV739 2026-11-04 at 02:30, rate 12.75.'),'Flight SV739 2026-11-04 at 02:30, rate 12.75.');
+for(const shift of ['9AM - 6PM','09:00-18:00','9:00 am to 6:00 pm','09.00 a.m. — 06.00 p.m.'])assert.equal(F.formatShift(shift),'09:00–18:00');
+assert.equal(F.formatShift('9PM - 6AM'),'21:00–06:00');assert.equal(F.formatShift('12AM - 12PM'),'00:00–12:00');
+assert.equal(F.formatShift('25:00-18:00'),'25:00-18:00');assert.equal(F.formatShift('9 - 6PM'),'9 - 6PM');assert.equal(F.formatShift(null),'Not set');
 console.log('PASS duration precision, PKT times, invalid values and evidence-safe alert text');})();

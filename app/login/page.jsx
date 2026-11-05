@@ -31,7 +31,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="login-page min-h-screen flex">
       {/* Left panel — brand */}
       <div className="hidden lg:flex lg:w-1/2 bg-ink flex-col justify-between p-12 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-signal" />
@@ -63,9 +63,11 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate mb-1.5">Email</label>
+              <label htmlFor="login-email" className="block text-xs font-medium text-slate mb-1.5">Email</label>
               <input
                 type="email"
+                id="login-email"
+                autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -75,9 +77,11 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate mb-1.5">Password</label>
+              <label htmlFor="login-password" className="block text-xs font-medium text-slate mb-1.5">Password</label>
               <input
                 type="password"
+                id="login-password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -93,7 +97,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-signal text-paper py-2.5 text-sm font-medium hover:bg-signal-dark transition-colors disabled:opacity-60"
+              className="login-submit"
             >
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
@@ -103,3 +107,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
