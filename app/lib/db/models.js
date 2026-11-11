@@ -21,6 +21,11 @@ const employeeSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
   assigned_pc: { type: String, default: null }, // PC name if applicable
   shift_timing: String,
+  shiftStart: String,
+  shiftEnd: String,
+  weeklyShifts: { type: [{ day: Number, startTime: String, endTime: String, _id: false }], default: () => [] },
+  weeklyOffDays: { type: [Number], default: () => [0] },
+  workDateOverrides: { type: [{ date: String, isOff: Boolean, _id: false }], default: () => [] },
   profile_photo: String,
 
   assignedLocation: { type: String, enum: ['office', 'airport', 'either'], default: 'either' },

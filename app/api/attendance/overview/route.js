@@ -1,6 +1,7 @@
+import { dayPKT, addDays, shiftDate, shiftLabel, missingStatus } from '@/app/lib/attendance-policy';
 import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/db/connect';
-import { Employee, Attendance, LeaveRequest } from '@/app/lib/db/models';
+import { Employee, Attendance, AttendanceConfig, LeaveRequest } from '@/app/lib/db/models';
 import { getSession } from '@/app/lib/auth/jwt';
 
 function todayPKT() {
@@ -13,19 +14,22 @@ export async function GET() {
   if (!session) return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
 
   await connectDB();
-  const date = todayPKT();
+  const now = new Date(), date = dayPKT(now);
+  const config = (await AttendanceConfig.findOne({key:'default'}).lean()) || {};
   const employees = await Employee.find({ status: 'active' }).sort({ department: 1, name: 1 });
-  const records = await Attendance.find({ date });
-  const byEmployeeId = new Map(records.map((r) => [r.employeeId, r]));
+  const records = await Attendance.find({ date: { $gte: addDays(date, -1), $lte: date } });
+  const byEmployeeId = new Map(records.map((r) => [r.employeeId + ":" + r.date, r]));
 
   const rows = employees.map((e) => {
-    const rec = byEmployeeId.get(e.employeeId);
+    const attendanceDate = shiftDate(e, config, now);
+    const rec = byEmployeeId.get(e.employeeId + ":" + attendanceDate) || records.find(r => r.employeeId === e.employeeId && r.checkIn?.time && !r.checkOut?.time);
     return {
       employeeId: e.employeeId,
       name: e.name,
       department: e.department,
-      shift_timing: e.shift_timing,
-      status: rec?.status || 'Absent',
+      shift_timing: shiftLabel(e, config, rec?.date || attendanceDate),
+      attendanceDate: rec?.date || attendanceDate,
+      status: rec?.status || missingStatus(e, config, now),
       checkInTime: rec?.checkIn?.time || null,
       checkOutTime: rec?.checkOut?.time || null,
     };
@@ -36,5 +40,5 @@ export async function GET() {
 
   const leaveRequests = await LeaveRequest.find({}).sort({ requestedAt: -1 }).limit(20);
 
-  return NextResponse.json({ date, summary, rows, leaveRequests });
+  return NextResponse.json({ date, summary, rows, leaveRequests }, {headers:{'Cache-Control':'no-store'}});
 }
