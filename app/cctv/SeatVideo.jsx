@@ -3,7 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {seatViewport} from './seat-viewport.cjs';
 export default function SeatVideo({review}){
  const video=useRef(null),[full,setFull]=useState(false),[playing,setPlaying]=useState(false),[time,setTime]=useState(0),[duration,setDuration]=useState(0),[error,setError]=useState('');
- const viewport=seatViewport(review.videoViewport),cropped=!!viewport&&!full;
+ const room=review.reviewKind==='room',viewport=room?null:seatViewport(review.videoViewport),cropped=!!viewport&&!full;
  useEffect(()=>{setFull(false);setPlaying(false);setTime(0);setDuration(0);setError('');},[review.id,review.videoUrl]);
  async function toggle(){const v=video.current;if(!v)return;try{if(v.paused)await v.play();else v.pause();}catch{setError('This browser could not play the saved video. Open the original file in an HEVC-capable player.');}}
  function seek(value){if(!video.current)return;video.current.currentTime=Number(value);setTime(Number(value));}
@@ -11,7 +11,7 @@ export default function SeatVideo({review}){
  return <div className="mt-5">
   <div className="flex flex-wrap items-center justify-between gap-3 mb-3"><strong>{cropped?'Target-seat video':'Full-room context'}</strong>{viewport&&<button className="btn-secondary" onClick={()=>setFull(v=>!v)}>{full?'Show target seat':'Show full room'}</button>}</div>
   <div className="bg-black rounded-lg overflow-hidden mx-auto" style={cropped?{position:'relative',aspectRatio:viewport.aspectRatio,width:'100%',maxWidth:560}:{width:'100%'}}>
-   <video ref={video} playsInline preload="metadata" src={review.videoUrl} aria-label={`CCTV evidence for ${review.pcId}, physical seat ${review.physicalSeat}`} style={cropped?viewport.videoStyle:{width:'100%',maxHeight:'65vh'}}
+   <video ref={video} playsInline preload="metadata" src={review.videoUrl} aria-label={room?`Room CCTV evidence: ${review.camera}`:`CCTV evidence for ${review.pcId}, physical seat ${review.physicalSeat}`} style={cropped?viewport.videoStyle:{width:'100%',maxHeight:'65vh'}}
     onLoadedMetadata={()=>{const v=video.current;setDuration(Number.isFinite(v.duration)?v.duration:0);}}
     onTimeUpdate={()=>setTime(video.current.currentTime)} onPlay={()=>setPlaying(true)} onPause={()=>setPlaying(false)} onEnded={()=>setPlaying(false)}
     onError={()=>setError('Playback unavailable in this browser. The original recording may require an HEVC-capable player.')}/>
@@ -22,3 +22,4 @@ export default function SeatVideo({review}){
   <p className="text-xs text-slate mt-2">{cropped?'Seat view uses the configured crop; it does not identify the person. ':'Full room shown for context. '}Original recording; no extra video transcoding. Sample jumps are approximate; extracted stills carry their own recording timestamps.</p>
  </div>;
 }
+
