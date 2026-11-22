@@ -1,3 +1,4 @@
+import { resolvedAttendanceStatus } from '@/app/lib/attendance-calendar';
 import { dayPKT, addDays, shiftDate, shiftLabel, missingStatus } from '@/app/lib/attendance-policy';
 import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/db/connect';
@@ -24,7 +25,7 @@ export async function GET() {
 
   const rows = employees.map((e) => {
     const attendanceDate = shiftDate(e, config, now);
-    const rec = byEmployeeId.get(e.employeeId + ":" + attendanceDate) || records.find(r => r.employeeId === e.employeeId && r.checkIn?.time && !r.checkOut?.time);
+    const rec = byEmployeeId.get(e.employeeId + ":" + attendanceDate);
     return {
       employeeId: e.employeeId,
       name: e.name,
@@ -33,7 +34,7 @@ export async function GET() {
       attendanceDate: rec?.date || attendanceDate,
       isEnrolled: e.isEnrolled,
       assignedLocation: e.assignedLocation || 'either',
-      status: rec?.status || missingStatus(e, config, now),
+      status: resolvedAttendanceStatus(e, rec, config, now, attendanceDate),
       checkInTime: rec?.checkIn?.time || null,
       checkOutTime: rec?.checkOut?.time || null,
       checkInFaceMatch: rec?.checkIn?.faceMatchStatus || null,
@@ -49,3 +50,4 @@ export async function GET() {
 
   return NextResponse.json({ date, rows }, {headers:{'Cache-Control':'no-store'}});
 }
+

@@ -24,11 +24,13 @@ export default function AttendancePage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/attendance/overview')
+    function loadAttendance() { fetch('/api/attendance/overview', {cache:'no-store'})
       .then((r) => r.json())
       .then((body) => { if (!cancelled) { if (body.error) setError(body.error); else setData(body); } })
-      .catch(() => { if (!cancelled) setError('Could not load attendance.'); });
-    return () => { cancelled = true; };
+      .catch(() => { if (!cancelled) setError('Could not load attendance.'); }); }
+    loadAttendance();
+    const timer = setInterval(loadAttendance, 60000);
+    return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
   useEffect(() => {
@@ -132,4 +134,5 @@ export default function AttendancePage() {
     </div>
   );
 }
+
 
