@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
-import { safeReturnPath } from './app/lib/auth/return-path';
+import { dashboardLoginPath, safeReturnPath } from './app/lib/auth/return-path';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
@@ -44,9 +44,7 @@ export async function middleware(request) {
     return NextResponse.json({ error: 'Not signed in.' }, { status: 401 });
   }
 
-  const loginUrl = new URL('/login', request.url);
-  loginUrl.searchParams.set('next', pathname + request.nextUrl.search);
-  return NextResponse.redirect(loginUrl);
+  return NextResponse.redirect(new URL(dashboardLoginPath(pathname + request.nextUrl.search), request.url));
 }
 
 export const config = {
