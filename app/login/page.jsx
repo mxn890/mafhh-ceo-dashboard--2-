@@ -1,10 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { safeReturnPath } from '../lib/auth/return-path';
 
 export default function LoginPage() {
-  const router = useRouter();
+  const [checkingSession, setCheckingSession] = useState(true);
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/session', {cache:'no-store', credentials:'same-origin'})
+      .then(r => r.ok ? r.json() : null)
+      .then(body => { if (active && body?.authenticated) window.location.replace(safeReturnPath(new URLSearchParams(window.location.search).get('next'))); })
+      .catch(() => {})
+      .finally(() => { if (active) setCheckingSession(false); });
+    return () => { active = false; };
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
@@ -22,8 +31,7 @@ export default function LoginPage() {
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || 'Login failed.');
-      router.push('/');
-      router.refresh();
+      window.location.assign(safeReturnPath(new URLSearchParams(window.location.search).get('next')));
     } catch (err) {
       setError(err.message);
       setLoading(false);
@@ -96,10 +104,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || checkingSession}
               className="login-submit"
             >
-              {loading ? 'Signing in…' : 'Sign in'}
+              {checkingSession ? 'Restoring session…' : loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
         </div>
@@ -107,4 +115,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import { safeReturnPath } from './app/lib/auth/return-path';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key');
 
@@ -24,6 +25,10 @@ async function hasValidSession(request) {
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
+  if (pathname === '/login' && await hasValidSession(request)) {
+    return NextResponse.redirect(new URL(safeReturnPath(request.nextUrl.searchParams.get('next')), request.url));
+  }
+
   const isPublicPage = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const isPublicApi = PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p));
   if (isPublicPage || isPublicApi) {
@@ -40,7 +45,7 @@ export async function middleware(request) {
   }
 
   const loginUrl = new URL('/login', request.url);
-  loginUrl.searchParams.set('next', pathname);
+  loginUrl.searchParams.set('next', pathname + request.nextUrl.search);
   return NextResponse.redirect(loginUrl);
 }
 
@@ -54,3 +59,4 @@ export const config = {
     '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };
+

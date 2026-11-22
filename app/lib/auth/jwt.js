@@ -33,12 +33,15 @@ export async function getSession() {
 }
 
 export async function setAuthCookie(token) {
+  const session = await verifyToken(token);
+  if (!session || !Number.isFinite(session.exp)) throw new Error('Invalid session cookie.');
+  const remaining = Math.max(0, Math.floor(session.exp - Date.now() / 1000));
   const cookieStore = await cookies();
   cookieStore.set('auth_token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    sameSite: 'lax',
+    maxAge: Math.min(7 * 24 * 60 * 60, remaining), // Never extend the signed session.
     path: '/',
   });
 }
@@ -46,4 +49,15 @@ export async function setAuthCookie(token) {
 export async function clearAuthCookie() {
   const cookieStore = await cookies();
   cookieStore.delete('auth_token');
+}
+
+
+export async function restoreAuthCookie() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth_token')?.value;
+    if (!token || !(await verifyToken(token))) return false;
+    await setAuthCookie(token);
+    return true;
+  } catch { return false; }
 }
